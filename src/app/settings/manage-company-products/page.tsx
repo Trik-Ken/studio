@@ -63,11 +63,11 @@ const productSchema = z.object({
   ),
   priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
   category: z.string().optional().or(z.literal('')),
-  imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), { 
-    message: "Primary image is required. Upload an image or ensure a valid placeholder/URL." 
+  imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co'), { 
+    message: "Primary image is required. Please upload an image or ensure a valid placeholder is set." 
   }).or(z.literal('')),
   additionalImageUrls: z.array(
-    z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), {
+     z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), {
         message: "Each additional image must be a valid data URI or URL."
     })
   ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]),
@@ -122,8 +122,8 @@ export default function ManageCompanyProductsPage() {
       imageUrl: 'https://placehold.co/600x400.png',
       additionalImageUrls: [],
       specificationsText: '',
-      warrantyInfo: '',
-      returnPolicy: '',
+      warrantyInfo: 'Standard 1-year warranty.',
+      returnPolicy: '30-day return policy, see terms for details.',
     },
   });
 
@@ -179,33 +179,46 @@ export default function ManageCompanyProductsPage() {
     if (files) {
         if (files.length > 6) {
             toast({ title: "Too many files", description: "You can select a maximum of 6 additional images.", variant: "destructive" });
-            // Optionally clear the file input
             if (event.target) event.target.value = ''; 
             return;
         }
-        const newFilePreviews: string[] = [];
+
         const filePromises = Array.from(files).map(file => {
-            return new Promise<string>((resolve, reject) => {
+            return new Promise<string | null>((resolve) => { // Changed to resolve with string | null
                 if (file.size > 2 * 1024 * 1024) { // 2MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 2MB. Please select smaller images.`, variant: "destructive"});
-                    reject(new Error(`${file.name} is too large`));
+                    resolve(null); // Resolve with null on error
                     return;
                 }
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = (error) => reject(error);
+                reader.onerror = (error) => {
+                    console.error("Error reading file:", file.name, error);
+                    toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
+                    resolve(null); // Resolve with null on error
+                };
                 reader.readAsDataURL(file);
             });
         });
 
         try {
-            const settledPreviews = await Promise.all(filePromises);
-            setAdditionalProductImagePreviews(settledPreviews);
-            productForm.setValue('additionalImageUrls', settledPreviews, { shouldValidate: true });
+            const settledPreviewsOrNulls = await Promise.all(filePromises);
+            const validPreviews = settledPreviewsOrNulls.filter(p => p !== null) as string[];
+            
+            setAdditionalProductImagePreviews(validPreviews); // Update previews with only valid ones
+            productForm.setValue('additionalImageUrls', validPreviews, { shouldValidate: true });
+
+            // If some files failed (meaning not all selected files resulted in valid previews),
+            // clear the file input so the user can try again with problematic files.
+            if (validPreviews.length !== files.length) {
+                 if (event.target) event.target.value = '';
+            }
+
         } catch (error) {
-            console.error("Error reading files for additional images:", error);
-            // Individual file errors are toasted inside the promise
-             // Clear the file input if there was an error with any file
+            // This catch block is for truly unexpected errors during Promise.all or subsequent logic.
+            // Individual file read/size errors are handled by resolving to null.
+            console.error("Unexpected error processing additional images:", error);
+            toast({ title: "Error", description: "An unexpected error occurred while processing images.", variant: "destructive" });
             if (event.target) event.target.value = '';
         }
     }
@@ -218,8 +231,10 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        logoUrl: values.logoUrl || company.logoUrl,
+        logoUrl: values.logoUrl || company.logoUrl, // Use new logo if provided, else keep old
+        gstNumber: company.gstNumber, // Keep existing gstNumber as it's not in this form
         website: company.website, 
+        phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint 
     };
     
@@ -276,10 +291,12 @@ export default function ManageCompanyProductsPage() {
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
     
     const additionalImages = product.images && product.images.length > 1 
-        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
-        : [];
-    setAdditionalProductImagePreviews(additionalImages);
+        ? product.images.slice(1).filter(img => img !== product.imageUrl) // Exclude primary from here if already separate
+        : (product.images?.filter(img => img !== product.imageUrl) || []); // Ensure it handles cases where imageUrl might not be in images
+    
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
+    setAdditionalProductImagePreviews(additionalImages);
+
 
     productForm.reset({
       id: product.id,
@@ -315,29 +332,34 @@ export default function ManageCompanyProductsPage() {
     if (!company) return;
 
     const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
-    let allImageUrls = [primaryImageUrl];
+    let allImageUrls: string[] = [primaryImageUrl]; 
+
     if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
-      allImageUrls = [...allImageUrls, ...values.additionalImageUrls];
+       // Filter out duplicates just in case, though direct upload should make this less likely
+      const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
+      allImageUrls = [primaryImageUrl, ...uniqueAdditional];
     }
-    allImageUrls = [...new Set(allImageUrls)].slice(0, 7); 
+    allImageUrls = allImageUrls.slice(0, 7); // Ensure max 7 images (1 primary + 6 additional)
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
         ...values,
-        imageUrl: primaryImageUrl,
-        images: allImageUrls,
+        imageUrl: primaryImageUrl, // This is the primary display image
+        images: allImageUrls, // This array includes the primary and additional images for carousel
         specifications: parsedSpecifications, 
-        dataAiHint: values.category || "product image",
+        dataAiHint: values.category || "product image", // Use category for AI hint or a default
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
+    // Remove specificationsText as it's been parsed into specifications array
     const { specificationsText, ...finalProductData } = productData;
 
 
     if (editingProduct) { 
       const updatedProduct: Product = { ...editingProduct, ...finalProductData };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
+      
       const productIndex = mockProducts.findIndex(p => p.id === editingProduct.id);
       if (productIndex !== -1) {
         mockProducts[productIndex] = updatedProduct;
@@ -373,6 +395,7 @@ export default function ManageCompanyProductsPage() {
     );
   }
 
+  // Watch imageUrl to ensure preview updates if the value is programmatically set (e.g. to placeholder)
   const watchedImageUrl = productForm.watch('imageUrl');
 
 
@@ -383,7 +406,7 @@ export default function ManageCompanyProductsPage() {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Settings
         </Button>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Manage Company &amp; Products</h1>
-        <p className="text-muted-foreground">Edit your company's public profile and manage your product listings.</p>
+        <p className="text-muted-foreground">Edit your company's public profile and manage your product listings. Upload images directly from your device.</p>
       </header>
 
       <Card className="mb-8 shadow-md">
@@ -634,7 +657,6 @@ export default function ManageCompanyProductsPage() {
                                                 data-ai-hint="product image"
                                                 unoptimized={previewUrl.startsWith('data:image/')}
                                             />
-                                            {/* TODO: Button to remove this specific image */}
                                         </div>
                                     ))}
                                 </div>
@@ -778,4 +800,3 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
-
