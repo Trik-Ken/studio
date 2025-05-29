@@ -51,6 +51,7 @@ export default function ProfilePage() {
               height={80}
               className="rounded-full border bg-muted"
               data-ai-hint={company.dataAiHint || "company logo"}
+              unoptimized={company.logoUrl.startsWith('https://placehold.co') || company.logoUrl.startsWith('data:image/')}
             />
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground">{company.name}</h1>
@@ -118,7 +119,7 @@ export default function ProfilePage() {
 
         {companyProducts.length > 0 ? (
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:flex xl:w-auto mb-4">
+            <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto mb-4">
               <TabsTrigger value="all" className="whitespace-nowrap">All Products</TabsTrigger>
               {categories.map(category => (
                 <TabsTrigger key={category} value={category} className="whitespace-nowrap capitalize">
