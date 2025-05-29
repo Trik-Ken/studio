@@ -1,46 +1,46 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, UserCog, ShieldCheck, HelpCircle, Bell, Palette, LogOut, ExternalLink } from 'lucide-react';
+import { ChevronRight, UserCog, ShieldCheck, HelpCircle, Bell, Palette, LogOut, ExternalLink, Briefcase } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 const settingsOptions = [
   {
-    id: 'edit-profile',
-    title: 'Edit Company Profile',
-    description: 'Update your company name, logo, description, and contact information.',
-    icon: UserCog,
-    href: '/profile/edit', // Example link, actual page not implemented
+    id: 'manage-company-products',
+    title: 'Manage Company & Products',
+    description: 'Edit company details, add new products, and update existing product listings.',
+    icon: Briefcase, // Changed icon to better reflect product management
+    href: '/settings/manage-company-products', 
   },
   {
     id: 'security',
     title: 'Security &amp; Login',
     description: 'Manage your password, two-factor authentication, and active sessions.',
     icon: ShieldCheck,
-    href: '/settings/security', // Example link
+    href: '/settings/security', 
   },
   {
     id: 'notifications',
     title: 'Notification Preferences',
     description: 'Choose how you receive alerts for messages, orders, and system updates.',
     icon: Bell,
-    href: '/settings/notifications', // Example link
+    href: '/settings/notifications', 
   },
   {
     id: 'appearance',
     title: 'Appearance',
     description: 'Customize the look and feel of the app (e.g., theme).',
     icon: Palette,
-    href: '/settings/appearance', // Example link
+    href: '/settings/appearance', 
   },
   {
     id: 'help',
     title: 'Help &amp; Support',
     description: 'Access FAQs, contact support, or report an issue.',
     icon: HelpCircle,
-    href: '/support', // Example link
+    href: '/support', 
   },
 ];
 
