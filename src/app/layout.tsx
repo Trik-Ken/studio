@@ -1,7 +1,7 @@
 
 'use client'; // Required for usePathname
 
-import type { Metadata } from 'next';
+// import type { Metadata } from 'next'; // Metadata type export not used in client component
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { BottomNavigation } from '@/components/layout/bottom-navigation';
@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-// Metadata cannot be dynamic in a client component layout
-// For simplicity in this prototype, we'll manage title via document.title if needed or accept this limitation.
+// For a client RootLayout, metadata should ideally be handled by child server components or pages.
+// Static metadata export is not effective here.
 
 export default function RootLayout({
   children,
@@ -29,24 +29,20 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const showBottomNav = !['/login', '/register'].includes(pathname);
-  const showGlobalHeader = !['/login', '/register'].includes(pathname); // Condition for global header
+  const showGlobalHeader = !['/login', '/register'].includes(pathname);
 
-  // It's generally better to export metadata from page files or a Server Component layout
-  // For a client RootLayout, you might set document.title in a useEffect if needed.
+  // Client-side title update as a fallback for client component layout
   if (typeof window !== 'undefined') {
-    document.title = 'ConTrad'; // Updated App Name
+    document.title = 'ConTrad';
   }
-
 
   return (
     <html lang="en">
-      <head>
-        <meta name="description" content="Connecting businesses for commerce with ConTrad." /> {/* Updated App Name */}
-      </head>
+      <head><meta name="description" content="Connecting businesses for commerce with ConTrad." />{/* Updated App Name */}</head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
         <div className="flex min-h-screen flex-col">
-          {showGlobalHeader && <GlobalHeader />} {/* Conditionally render GlobalHeader */}
-          <main className={`flex-grow ${showBottomNav ? 'pb-20' : ''} ${showGlobalHeader ? 'pt-16' : ''}`}> {/* Adjust padding top if header is shown */}
+          {showGlobalHeader && <GlobalHeader />}
+          <main className={`flex-grow ${showBottomNav ? 'pb-20' : ''} ${showGlobalHeader ? 'pt-16' : ''}`}>
             {children}
           </main>
           {showBottomNav && <BottomNavigation />}
