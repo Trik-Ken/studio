@@ -184,10 +184,10 @@ export default function ManageCompanyProductsPage() {
         }
 
         const filePromises = Array.from(files).map(file => {
-            return new Promise<string | null>((resolve) => { // Changed to resolve with string | null
-                if (file.size > 2 * 1024 * 1024) { // 2MB limit per image
-                    toast({ title: "File too large", description: `${file.name} is over 2MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null); // Resolve with null on error
+            return new Promise<string | null>((resolve) => { 
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
+                    toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
+                    resolve(null); 
                     return;
                 }
                 const reader = new FileReader();
@@ -195,7 +195,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null); // Resolve with null on error
+                    resolve(null); 
                 };
                 reader.readAsDataURL(file);
             });
@@ -205,18 +205,14 @@ export default function ManageCompanyProductsPage() {
             const settledPreviewsOrNulls = await Promise.all(filePromises);
             const validPreviews = settledPreviewsOrNulls.filter(p => p !== null) as string[];
             
-            setAdditionalProductImagePreviews(validPreviews); // Update previews with only valid ones
+            setAdditionalProductImagePreviews(validPreviews); 
             productForm.setValue('additionalImageUrls', validPreviews, { shouldValidate: true });
 
-            // If some files failed (meaning not all selected files resulted in valid previews),
-            // clear the file input so the user can try again with problematic files.
             if (validPreviews.length !== files.length) {
                  if (event.target) event.target.value = '';
             }
 
         } catch (error) {
-            // This catch block is for truly unexpected errors during Promise.all or subsequent logic.
-            // Individual file read/size errors are handled by resolving to null.
             console.error("Unexpected error processing additional images:", error);
             toast({ title: "Error", description: "An unexpected error occurred while processing images.", variant: "destructive" });
             if (event.target) event.target.value = '';
@@ -231,8 +227,8 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        logoUrl: values.logoUrl || company.logoUrl, // Use new logo if provided, else keep old
-        gstNumber: company.gstNumber, // Keep existing gstNumber as it's not in this form
+        logoUrl: values.logoUrl || company.logoUrl, 
+        gstNumber: company.gstNumber, 
         website: company.website, 
         phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint 
@@ -291,8 +287,8 @@ export default function ManageCompanyProductsPage() {
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
     
     const additionalImages = product.images && product.images.length > 1 
-        ? product.images.slice(1).filter(img => img !== product.imageUrl) // Exclude primary from here if already separate
-        : (product.images?.filter(img => img !== product.imageUrl) || []); // Ensure it handles cases where imageUrl might not be in images
+        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
+        : (product.images?.filter(img => img !== product.imageUrl) || []); 
     
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
     setAdditionalProductImagePreviews(additionalImages);
@@ -335,24 +331,23 @@ export default function ManageCompanyProductsPage() {
     let allImageUrls: string[] = [primaryImageUrl]; 
 
     if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
-       // Filter out duplicates just in case, though direct upload should make this less likely
       const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
       allImageUrls = [primaryImageUrl, ...uniqueAdditional];
     }
-    allImageUrls = allImageUrls.slice(0, 7); // Ensure max 7 images (1 primary + 6 additional)
+    allImageUrls = allImageUrls.slice(0, 7); 
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
         ...values,
-        imageUrl: primaryImageUrl, // This is the primary display image
-        images: allImageUrls, // This array includes the primary and additional images for carousel
+        imageUrl: primaryImageUrl, 
+        images: allImageUrls, 
         specifications: parsedSpecifications, 
-        dataAiHint: values.category || "product image", // Use category for AI hint or a default
+        dataAiHint: values.category || "product image", 
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
-    // Remove specificationsText as it's been parsed into specifications array
+    
     const { specificationsText, ...finalProductData } = productData;
 
 
@@ -395,7 +390,6 @@ export default function ManageCompanyProductsPage() {
     );
   }
 
-  // Watch imageUrl to ensure preview updates if the value is programmatically set (e.g. to placeholder)
   const watchedImageUrl = productForm.watch('imageUrl');
 
 
@@ -643,7 +637,7 @@ export default function ManageCompanyProductsPage() {
                                     className="w-full"
                                 />
                             </FormControl>
-                            <FormDescription>Select up to 6 additional images from your device (max 2MB each).</FormDescription>
+                            <FormDescription>Select up to 6 additional images from your device (max 5MB each).</FormDescription>
                             {additionalProductImagePreviews.length > 0 && (
                                 <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                                     {additionalProductImagePreviews.map((previewUrl, index) => (
@@ -800,3 +794,5 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
+
+    
