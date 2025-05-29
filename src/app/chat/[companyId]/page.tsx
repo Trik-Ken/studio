@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageBubble } from '@/components/message-bubble';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Phone, Info, Send, Paperclip, Smile } from 'lucide-react';
+import { ArrowLeft, Phone, Info, Send, Paperclip, Smile, Image as ImageIcon, Video as VideoIcon, FileText as FileTextIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function DirectChatPage() {
   const router = useRouter();
@@ -29,46 +30,38 @@ export default function DirectChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load company details
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
     setCompany(foundCompany);
 
-    // Load initial chat messages
-    const conversationId = companyId; // Simplified for mock
+    const conversationId = companyId; 
     const loadedMessages = mockMessages[conversationId] || [];
     setMessages(loadedMessages);
 
-    // Check for product context from query params
     const productIdFromQuery = searchParams.get('product');
 
     if (productIdFromQuery) {
-      // If the product ID from URL changes, or if it's new and different from current context
       if (productContext?.id !== productIdFromQuery) {
         const product = mockProducts.find(p => p.id === productIdFromQuery);
         setProductContext(product);
-        prefillDoneRef.current = false; // Reset prefill flag for new product
-        if (product) { // Only clear message if we are setting a new product context
-            setNewMessage(''); // Clear existing input for new prefill
+        prefillDoneRef.current = false; 
+        if (product) { 
+            setNewMessage(''); 
         }
       }
     } else {
-      // Product ID removed from URL or not present
-      if (productContext) { // If there was a product context, clear it
+      if (productContext) { 
         setProductContext(undefined);
         prefillDoneRef.current = false;
-        // Optionally clear newMessage if product context is removed and input was prefilled:
-        // if (newMessage.startsWith("I'm interested in your product:")) setNewMessage(''); 
       }
     }
-  }, [companyId, searchParams, productContext?.id]); // Effect runs if companyId, searchParams, or the ID of productContext changes
+  }, [companyId, searchParams, productContext?.id]);
 
   useEffect(() => {
-    // Pre-fill message input if there's product context and it hasn't been pre-filled yet for this product
     if (productContext && !prefillDoneRef.current) {
       setNewMessage(`I'm interested in your product: ${productContext.name}. `);
-      prefillDoneRef.current = true; // Mark as pre-filled for this specific product context
+      prefillDoneRef.current = true; 
     }
-  }, [productContext]); // This effect runs when productContext (the object itself) changes
+  }, [productContext]); 
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,16 +73,15 @@ export default function DirectChatPage() {
 
     const message: ChatMessage = {
       id: `msg-${Date.now()}`,
-      conversationId: company.id, // Simplified
+      conversationId: company.id,
       sender: 'user',
       text: newMessage,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages([...messages, message]);
     setNewMessage('');
-    prefillDoneRef.current = true; // After sending a message, consider prefill "handled" even if it was custom
+    prefillDoneRef.current = true; 
 
-    // Mock company reply
     setTimeout(() => {
       const reply: ChatMessage = {
         id: `reply-${Date.now()}`,
@@ -102,6 +94,31 @@ export default function DirectChatPage() {
     }, 1000);
   };
 
+  const handleAttachmentSelect = (type: 'image' | 'video' | 'document') => {
+    // Placeholder for actual attachment handling logic
+    console.log(`Selected to attach a ${type}`);
+    // In a real app, this would open a file picker or other UI
+    const attachmentMessage: ChatMessage = {
+      id: `msg-attachment-${Date.now()}`,
+      conversationId: company!.id,
+      sender: 'user',
+      text: `[Attachment: User selected a ${type}]`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, attachmentMessage]);
+    // Mock company reply for attachment
+    setTimeout(() => {
+      const reply: ChatMessage = {
+        id: `reply-attachment-${Date.now()}`,
+        conversationId: company!.id,
+        sender: 'company',
+        text: `We've received your ${type} selection. (This is a mock response)`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => [...prev, reply]);
+    }, 1500);
+  };
+
   if (!company) {
     return (
       <div className="flex flex-col h-[calc(100vh-4rem)] items-center justify-center">
@@ -111,8 +128,7 @@ export default function DirectChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/30"> {/* Adjusted height for bottom nav */}
-      {/* Header */}
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/30">
       <header className="flex items-center p-3 border-b bg-background shadow-sm">
         <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
@@ -136,7 +152,6 @@ export default function DirectChatPage() {
         </div>
       </header>
 
-      {/* Messages Area */}
       <ScrollArea className="flex-grow p-4 space-y-4">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
@@ -144,12 +159,28 @@ export default function DirectChatPage() {
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      {/* Input Area */}
       <form onSubmit={handleSendMessage} className="p-3 border-t bg-background shadow-top-sm">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" type="button">
-            <Paperclip className="h-5 w-5 text-muted-foreground" />
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" type="button">
+                <Paperclip className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="flex flex-col space-y-1">
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('image')}>
+                  <ImageIcon className="mr-2 h-4 w-4" /> Image
+                </Button>
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('video')}>
+                  <VideoIcon className="mr-2 h-4 w-4" /> Video
+                </Button>
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('document')}>
+                  <FileTextIcon className="mr-2 h-4 w-4" /> Document
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Input
             type="text"
             placeholder="Type a message..."
