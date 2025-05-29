@@ -1,18 +1,19 @@
+
 export interface Product {
   id: string;
   name: string;
-  imageUrl: string;
-  images?: string[];
+  imageUrl: string; // Primary image, will also be images[0]
+  images?: string[]; // Array of all image URLs, including primary
   description: string;
   specifications: { key: string; value: string }[];
   warrantyInfo: string;
   returnPolicy: string;
   companyId: string;
   companyName: string;
-  price: number; // Renamed from pricePerUnit
-  priceForQuantity: number; // The number of items the 'price' is for
-  priceUnit: string; // The name of the individual item/unit (singular, e.g., "unit", "panel")
-  category?: string;
+  price: number;
+  priceForQuantity: number;
+  priceUnit: string;
+  category?: string; // Will be used for categorization on profile page
   rating?: number;
   reviewsCount?: number;
   quantityAvailable?: number;
@@ -28,7 +29,7 @@ export interface Company {
   contactEmail?: string;
   website?: string;
   phoneNumber?: string;
-  gstNumber?: string; // Added GST Number
+  gstNumber?: string;
   dataAiHint?: string;
 }
 

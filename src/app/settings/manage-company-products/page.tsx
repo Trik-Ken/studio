@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package } from 'lucide-react';
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, Info } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/form";
 
 
-// Zod schema for company details
 const companySchema = z.object({
   name: z.string().min(3, { message: "Company name must be at least 3 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
@@ -50,7 +49,6 @@ const companySchema = z.object({
   logoUrl: z.string().optional().or(z.literal('')),
 });
 
-// Zod schema for product
 const productSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, { message: "Product name must be at least 3 characters." }),
@@ -64,8 +62,9 @@ const productSchema = z.object({
     z.number({invalid_type_error: "Quantity must be a whole number."}).int().min(1, { message: "Quantity must be at least 1."})
   ),
   priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
-  category: z.string().optional().or(z.literal('')),
-  imageUrl: z.string().url({message: "Please enter a valid image URL (e.g., https://placehold.co/600x400.png)"}).optional().or(z.literal('')),
+  category: z.string().min(1, {message: "Category is required."}),
+  imageUrl: z.string().url({message: "Primary image URL must be valid."}).or(z.literal('')).refine(val => val.trim() !== '', { message: "Primary image URL is required." }),
+  additionalImageUrls: z.string().optional().or(z.literal('')), // Textarea for multiple URLs, one per line
 });
 
 export default function ManageCompanyProductsPage() {
@@ -109,6 +108,7 @@ export default function ManageCompanyProductsPage() {
       priceUnit: 'unit',
       category: '',
       imageUrl: '',
+      additionalImageUrls: '',
     },
   });
 
@@ -128,7 +128,7 @@ export default function ManageCompanyProductsPage() {
   const handleLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // Max 2MB
+      if (file.size > 2 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Logo image must be under 2MB.", variant: "destructive"});
         return;
       }
@@ -147,9 +147,9 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        logoUrl: logoPreview || company.logoUrl, // Use preview if a new logo was selected
-        website: company.website, // Retain existing website if any, as it's not in the form
-        dataAiHint: company.dataAiHint // Preserve existing AI hint
+        logoUrl: logoPreview || company.logoUrl, 
+        website: company.website, 
+        dataAiHint: company.dataAiHint 
     };
     
     setCompany(updatedCompanyData);
@@ -177,13 +177,15 @@ export default function ManageCompanyProductsPage() {
       priceForQuantity: 1,
       priceUnit: 'unit',
       category: '',
-      imageUrl: 'https://placehold.co/600x400.png', // Default placeholder
+      imageUrl: 'https://placehold.co/600x400.png',
+      additionalImageUrls: '',
     });
     setIsProductModalOpen(true);
   };
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
+    const additionalUrls = product.images && product.images.length > 1 ? product.images.slice(1).join('\n') : '';
     productForm.reset({
       id: product.id,
       name: product.name,
@@ -193,6 +195,7 @@ export default function ManageCompanyProductsPage() {
       priceUnit: product.priceUnit,
       category: product.category || '',
       imageUrl: product.imageUrl || 'https://placehold.co/600x400.png',
+      additionalImageUrls: additionalUrls,
     });
     setIsProductModalOpen(true);
   };
@@ -213,14 +216,22 @@ export default function ManageCompanyProductsPage() {
   const onSubmitProduct = (values: z.infer<typeof productSchema>) => {
     if (!company) return;
 
+    const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
+    let allImageUrls = [primaryImageUrl];
+    if (values.additionalImageUrls) {
+      const additionalUrls = values.additionalImageUrls.split('\n').map(url => url.trim()).filter(url => url !== '' && url !== primaryImageUrl);
+      allImageUrls = [...allImageUrls, ...additionalUrls];
+    }
+    allImageUrls = [...new Set(allImageUrls)].slice(0, 7); // Remove duplicates and cap at 7
+
     const productData = {
         ...values,
-        imageUrl: values.imageUrl || 'https://placehold.co/600x400.png',
-        images: [values.imageUrl || 'https://placehold.co/600x400.png'], // Simplified images array
-        specifications: [], // Default, can be expanded
-        warrantyInfo: "Standard warranty", // Default
-        returnPolicy: "30-day returns", // Default
-        dataAiHint: values.category || "product image", // Use category for hint or default
+        imageUrl: primaryImageUrl,
+        images: allImageUrls,
+        specifications: editingProduct?.specifications || [], 
+        warrantyInfo: editingProduct?.warrantyInfo || "Standard warranty", 
+        returnPolicy: editingProduct?.returnPolicy || "30-day returns", 
+        dataAiHint: values.category || "product image",
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
@@ -239,10 +250,10 @@ export default function ManageCompanyProductsPage() {
     } else { 
       const newProduct: Product = {
         ...productData,
-        id: `prod-${Date.now()}`, // Mock ID generation
+        id: `prod-${Date.now()}`, 
       };
       setProducts(prev => [newProduct, ...prev]);
-      mockProducts.unshift(newProduct); // Add to the beginning of mock data for visibility
+      mockProducts.unshift(newProduct); 
       toast({
         title: 'Product Added',
         description: `${values.name} has been added to your listings.`,
@@ -365,7 +376,7 @@ export default function ManageCompanyProductsPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>Manage Products</CardTitle>
-            <CardDescription>Add new products or edit existing ones from your company's listings.</CardDescription>
+            <CardDescription>Add new products or edit existing ones from your company's listings. Category is mandatory.</CardDescription>
           </div>
           <Button onClick={handleAddNewProduct} className="w-full sm:w-auto">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Product
@@ -390,6 +401,7 @@ export default function ManageCompanyProductsPage() {
                     <p className="text-sm text-muted-foreground">
                       ${product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
                   </div>
                   <div className="flex gap-2 mt-3 sm:mt-0 flex-shrink-0 self-start sm:self-center">
@@ -436,13 +448,14 @@ export default function ManageCompanyProductsPage() {
 
       <AlertDialog open={isProductModalOpen} onOpenChange={(open) => {
           setIsProductModalOpen(open);
-          if (!open) setEditingProduct(null); // Reset editing state when modal closes
+          if (!open) setEditingProduct(null); 
       }}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</AlertDialogTitle>
             <AlertDialogDescription>
               {editingProduct ? `Update the details for ${editingProduct.name}.` : 'Enter the details for your new product.'}
+              <br/>Category is mandatory. Primary image URL is required. Up to 6 additional images can be added.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Form {...productForm}>
@@ -455,7 +468,7 @@ export default function ManageCompanyProductsPage() {
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Product Image URL</FormLabel>
+                      <FormLabel>Primary Product Image URL</FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-4">
                             <Image 
@@ -468,13 +481,31 @@ export default function ManageCompanyProductsPage() {
                                 onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/100x100.png'}}
                             />
                             <Input 
-                                placeholder="https://example.com/image.png" 
+                                placeholder="https://example.com/primary-image.png" 
                                 {...field} 
                                 className="flex-grow"
                             />
                         </div>
                       </FormControl>
-                      <FormDescription>Enter a direct URL for the product image. (e.g. https://placehold.co/600x400.png)</FormDescription>
+                      <FormDescription>This image will be shown on product cards.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={productForm.control}
+                  name="additionalImageUrls"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Additional Image URLs (Optional, up to 6)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                            placeholder="https://example.com/image2.png&#x0a;https://example.com/image3.png" 
+                            {...field} 
+                            rows={3} 
+                        />
+                      </FormControl>
+                      <FormDescription>One URL per line. Combined with primary, max 7 images.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -543,8 +574,9 @@ export default function ManageCompanyProductsPage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category (Optional)</FormLabel>
+                      <FormLabel>Category</FormLabel>
                       <FormControl><Input placeholder="e.g., Electronics, Industrial Parts" {...field} /></FormControl>
+                      <FormDescription>Category is mandatory for product organization.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -578,5 +610,3 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
-
-    

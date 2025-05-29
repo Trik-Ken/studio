@@ -1,16 +1,35 @@
+
+'use client'; // Added 'use client' for useState and useEffect
 import { mockProducts, mockCompanies } from '@/lib/mock-data';
 import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card'; // Removed CardDescription, CardTitle
 import { Separator } from '@/components/ui/separator';
 import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react'; // Added useState, useEffect
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const product = mockProducts.find((p) => p.id === params.id);
   const company = product ? mockCompanies.find((c) => c.id === product.companyId) : undefined;
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const displayImages = React.useMemo(() => {
+    if (product?.images && product.images.length > 0) {
+      return product.images;
+    }
+    if (product?.imageUrl) {
+      return [product.imageUrl];
+    }
+    return ['https://placehold.co/600x400.png?text=No+Image']; // Fallback
+  }, [product]);
+
+  useEffect(() => {
+    setCurrentImageIndex(0); // Reset when product changes
+  }, [product]);
 
   if (!product) {
     return (
@@ -22,10 +41,19 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       </div>
     );
   }
-
-  // Simplified image display instead of a full carousel
-  const displayImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
   
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + displayImages.length) % displayImages.length);
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % displayImages.length);
+  };
+
+  const handleThumbnailClick = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
   const priceDisplayString = () => {
     const unitString = `${product.priceForQuantity} ${product.priceUnit}${product.priceForQuantity === 1 ? '' : 's'}`;
     if (product.priceForQuantity === 1) {
@@ -38,33 +66,51 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-xl">
         <CardHeader className="p-0">
-          <div className="relative aspect-video w-full">
+          <div className="relative aspect-video w-full bg-muted">
             <Image
-              src={displayImages[0]}
-              alt={product.name}
+              src={displayImages[currentImageIndex]}
+              alt={`${product.name} - image ${currentImageIndex + 1}`}
               layout="fill"
-              objectFit="cover"
-              priority
+              objectFit="contain" // Changed to contain to see full image
+              priority={currentImageIndex === 0}
               data-ai-hint={product.dataAiHint || "product detail"}
+              key={displayImages[currentImageIndex]} // Add key for re-renders
+              unoptimized={true} // For placeholder.co if it has issues with Next/Image optimization
             />
-            {/* Basic navigation for multiple images if present */}
             {displayImages.length > 1 && (
               <>
-                <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full"
+                  onClick={handlePrevImage}
+                >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
-                <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full"
+                  onClick={handleNextImage}
+                >
                   <ChevronRight className="h-6 w-6" />
                 </Button>
               </>
             )}
           </div>
-          {/* Thumbnails if multiple images */}
           {displayImages.length > 1 && (
-            <div className="flex gap-2 p-4 bg-muted/50 overflow-x-auto">
+            <div className="flex gap-2 p-2 sm:p-4 bg-muted/50 overflow-x-auto">
               {displayImages.map((img, idx) => (
-                <div key={idx} className="relative h-20 w-20 flex-shrink-0 rounded-md overflow-hidden border-2 border-transparent hover:border-primary cursor-pointer">
-                  <Image src={img} alt={`${product.name} thumbnail ${idx+1}`} layout="fill" objectFit="cover" data-ai-hint={product.dataAiHint || "product thumbnail"}/>
+                <div 
+                  key={idx} 
+                  className={`relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 rounded-md overflow-hidden border-2 cursor-pointer transition-all ${currentImageIndex === idx ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/50'}`}
+                  onClick={() => handleThumbnailClick(idx)}
+                  role="button"
+                  aria-label={`View image ${idx + 1}`}
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleThumbnailClick(idx)}
+                >
+                  <Image src={img} alt={`${product.name} thumbnail ${idx+1}`} layout="fill" objectFit="cover" data-ai-hint={product.dataAiHint || "product thumbnail"} unoptimized={true}/>
                 </div>
               ))}
             </div>
@@ -80,20 +126,23 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             <p>{product.description}</p>
           </div>
 
-          <Separator className="my-6" />
-
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-3">Specifications</h2>
-            <ul className="space-y-2">
-              {product.specifications.map((spec) => (
-                <li key={spec.key} className="flex justify-between text-sm">
-                  <span className="font-medium text-muted-foreground">{spec.key}:</span>
-                  <span className="text-foreground">{spec.value}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
+          {product.specifications && product.specifications.length > 0 && (
+            <>
+              <Separator className="my-6" />
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-3">Specifications</h2>
+                <ul className="space-y-2">
+                  {product.specifications.map((spec) => (
+                    <li key={spec.key} className="flex justify-between text-sm">
+                      <span className="font-medium text-muted-foreground">{spec.key}:</span>
+                      <span className="text-foreground text-right">{spec.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+          
           <Separator className="my-6" />
           
           <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -106,8 +155,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               <div>
                 <h2 className="text-xl font-semibold mb-2">Sold By</h2>
                 <Link href={`/companies/${company.id}`} className="group">
-                  <div className="flex items-center gap-3">
-                    <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full" data-ai-hint={company.dataAiHint || "company logo"}/>
+                  <div className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
+                    <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full border" data-ai-hint={company.dataAiHint || "company logo"}/>
                     <div>
                       <p className="text-primary font-medium group-hover:underline">{company.name}</p>
                       <p className="text-xs text-muted-foreground">View company profile</p>

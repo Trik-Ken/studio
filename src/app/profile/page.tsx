@@ -1,22 +1,40 @@
 
+'use client';
+import { useState, useEffect } from 'react';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings } from 'lucide-react';
+import { Settings, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Company, Product } from '@/lib/types';
 
 export default function ProfilePage() {
-  const company = mockCompanies.find((c) => c.id === loggedInCompanyId);
-  const companyProducts = mockProducts.filter((p) => p.companyId === loggedInCompanyId);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [companyProducts, setCompanyProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const currentCompany = mockCompanies.find((c) => c.id === loggedInCompanyId);
+    setCompany(currentCompany || null);
+
+    if (currentCompany) {
+      const products = mockProducts.filter((p) => p.companyId === loggedInCompanyId);
+      setCompanyProducts(products);
+      
+      const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]));
+      setCategories(uniqueCategories.sort());
+    }
+  }, []);
+
 
   if (!company) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-semibold">Profile not found. Please log in.</h1>
-        {/* In a real app, you'd have a login button here */}
       </div>
     );
   }
@@ -96,18 +114,42 @@ export default function ProfilePage() {
       <div>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-foreground">Your Listed Products</h2>
-          {/* "Manage Orders" and "Add New Product" buttons removed from here */}
         </div>
+
         {companyProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {companyProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:flex xl:w-auto mb-4">
+              <TabsTrigger value="all" className="whitespace-nowrap">All Products</TabsTrigger>
+              {categories.map(category => (
+                <TabsTrigger key={category} value={category} className="whitespace-nowrap capitalize">
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="all">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {companyProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </TabsContent>
+
+            {categories.map(category => (
+              <TabsContent key={category} value={category}>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {companyProducts.filter(p => p.category === category).map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </TabsContent>
             ))}
-          </div>
+          </Tabs>
         ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
+            <Package className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
             <p className="text-xl text-muted-foreground">You haven't listed any products yet.</p>
-            {/* "List Your First Product" button removed */}
+            <p className="text-sm text-muted-foreground mt-1">Go to Settings &gt; Manage Company &amp; Products to add some.</p>
           </div>
         )}
       </div>

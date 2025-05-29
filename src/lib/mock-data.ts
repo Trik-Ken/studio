@@ -1,3 +1,4 @@
+
 import type { Product, Company, ChatConversation, ChatMessage } from './types';
 
 export const mockCompanies: Company[] = [
@@ -10,7 +11,7 @@ export const mockCompanies: Company[] = [
     contactEmail: 'sales@innovatech.com',
     website: 'www.innovatech.com',
     phoneNumber: '1-800-555-0100',
-    gstNumber: 'GSTIN1234567890', // Added GST Number
+    gstNumber: 'GSTIN1234567890',
     dataAiHint: 'technology company'
   },
   {
@@ -43,11 +44,12 @@ export const mockProducts: Product[] = [
   {
     id: 'prod1',
     name: 'Advanced AI Processor Unit',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrl: 'https://placehold.co/600x400.png?text=Primary+AI+Processor',
     images: [
-      'https://placehold.co/600x400.png',
-      'https://placehold.co/600x400.png',
-      'https://placehold.co/600x400.png',
+      'https://placehold.co/600x400.png?text=Primary+AI+Processor',
+      'https://placehold.co/600x400.png?text=AI+Processor+Side+View',
+      'https://placehold.co/600x400.png?text=AI+Processor+Packaging',
+      'https://placehold.co/600x400.png?text=AI+Processor+In+Use',
     ],
     description: 'State-of-the-art AI processor for demanding applications. Features high computational power and energy efficiency, ideal for machine learning and data processing tasks.',
     specifications: [
@@ -71,7 +73,12 @@ export const mockProducts: Product[] = [
   {
     id: 'prod2',
     name: 'Eco-Friendly Insulation Panels (Pack of 10)',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrl: 'https://placehold.co/600x400.png?text=Eco+Panels+Primary',
+    images: [
+        'https://placehold.co/600x400.png?text=Eco+Panels+Primary',
+        'https://placehold.co/600x400.png?text=Eco+Panels+Stack',
+        'https://placehold.co/600x400.png?text=Eco+Panels+Installation',
+    ],
     description: 'Sustainable insulation panels made from recycled materials. Provides excellent thermal resistance and soundproofing for residential and commercial buildings. Sold in packs of 10.',
     specifications: [
       { key: 'Material', value: 'Recycled Cellulose' },
@@ -83,19 +90,23 @@ export const mockProducts: Product[] = [
     returnPolicy: '60-day return policy, conditions apply',
     companyId: 'comp2',
     companyName: 'EcoBuild Supplies',
-    price: 250.00, // Price for a pack of 10 (25.00 per panel)
+    price: 250.00, 
     priceForQuantity: 10,
     priceUnit: 'panel',
     category: 'Building Materials',
     rating: 4.5,
     reviewsCount: 85,
-    quantityAvailable: 200, // Number of packs available
+    quantityAvailable: 200,
     dataAiHint: 'insulation panel'
   },
   {
     id: 'prod3',
     name: 'Industrial Grade Laser Cutter',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrl: 'https://placehold.co/600x400.png?text=Laser+Cutter+Main',
+    images: [
+        'https://placehold.co/600x400.png?text=Laser+Cutter+Main',
+        'https://placehold.co/600x400.png?text=Laser+Cutter+Close+Up',
+    ],
     description: 'High-precision laser cutter for various industrial materials. Offers fast cutting speeds and accuracy for intricate designs and mass production.',
     specifications: [
       { key: 'Laser Power', value: '150W CO2' },
@@ -118,7 +129,11 @@ export const mockProducts: Product[] = [
   {
     id: 'prod4',
     name: 'Quantum Entanglement Communicator',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrl: 'https://placehold.co/600x400.png?text=Quantum+Device',
+    images: [
+        'https://placehold.co/600x400.png?text=Quantum+Device',
+        'https://placehold.co/600x400.png?text=Quantum+Device+Glowing',
+    ],
     description: 'Prototype device for instantaneous communication across any distance. Note: Requires paired device and understanding of quantum physics. Handle with care.',
     specifications: [
       { key: 'Range', value: 'Effectively Infinite' },
@@ -136,6 +151,32 @@ export const mockProducts: Product[] = [
     quantityAvailable: 1,
     dataAiHint: 'futuristic device'
   },
+  {
+    id: 'prod5',
+    name: 'Smart Office Hub X2000',
+    imageUrl: 'https://placehold.co/600x400.png?text=Smart+Hub',
+    images: [
+        'https://placehold.co/600x400.png?text=Smart+Hub',
+        'https://placehold.co/600x400.png?text=Hub+Interface',
+        'https://placehold.co/600x400.png?text=Hub+Connections',
+    ],
+    description: 'Centralize your office automation with the Smart Office Hub. Controls lighting, climate, security, and more. Integrates with popular IoT platforms.',
+    specifications: [
+      { key: 'Connectivity', value: 'Wi-Fi, Bluetooth, Zigbee, Z-Wave' },
+      { key: 'Processor', value: 'Quad-core ARM Cortex-A72' },
+      { key: 'Supported Devices', value: 'Up to 200' },
+    ],
+    warrantyInfo: '3-year limited warranty',
+    returnPolicy: '45-day return policy',
+    companyId: 'comp1',
+    companyName: 'Innovatech Solutions',
+    price: 299.00,
+    priceForQuantity: 1,
+    priceUnit: 'hub',
+    category: 'Electronics', // Same category as prod1
+    quantityAvailable: 150,
+    dataAiHint: 'smart home device'
+  }
 ];
 
 export const mockChatConversations: ChatConversation[] = [
@@ -171,21 +212,20 @@ export const mockChatConversations: ChatConversation[] = [
 ];
 
 export const mockMessages: { [conversationId: string]: ChatMessage[] } = {
-  comp1: [ // Changed from chat1 to comp1 to match direct chat routing by companyId
+  comp1: [ 
     { id: 'msg1', conversationId: 'comp1', sender: 'user', text: 'Hello, I am interested in the AI Processor Unit.', timestamp: '10:25 AM' },
-    { id: 'msg2', conversationId: 'comp1', sender: 'company', text: 'Thanks for your inquiry! We will get back to you shortly.', timestamp: '10:30 AM' },
     { id: 'msg3', conversationId: 'comp1', sender: 'user', text: 'Could you tell me more about the power consumption under load?', timestamp: '10:32 AM' },
     { id: 'msg4', conversationId: 'comp1', sender: 'user', text: 'And what are the bulk pricing options?', timestamp: '10:33 AM' },
   ],
-  comp2: [ // Changed from chat2 to comp2
+  comp2: [ 
     { id: 'msg5', conversationId: 'comp2', sender: 'user', text: 'We need insulation panels for a large project.', timestamp: 'Yesterday' },
     { id: 'msg6', conversationId: 'comp2', sender: 'company', text: 'Certainly! What is the total square footage you are looking to cover?', timestamp: 'Yesterday' },
     { id: 'msg7', conversationId: 'comp2', sender: 'user', text: 'Can you provide a quote for 1000 units?', timestamp: 'Yesterday' },
   ],
-  comp3: [ // Changed from chat3 to comp3
+  comp3: [ 
     { id: 'msg8', conversationId: 'comp3', sender: 'company', text: 'Your laser cutter has been shipped.', timestamp: 'Mon' },
     { id: 'msg9', conversationId: 'comp3', sender: 'user', text: 'Great, the order is confirmed.', timestamp: 'Mon' },
   ],
 };
 
-export const loggedInCompanyId = 'comp1'; // Assume Innovatech Solutions is the logged-in user for profile page
+export const loggedInCompanyId = 'comp1';
