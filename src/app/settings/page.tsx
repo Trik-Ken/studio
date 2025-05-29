@@ -1,9 +1,24 @@
 
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Added for redirection
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardDescription
 import { ChevronRight, ShieldCheck, HelpCircle, Bell, Palette, LogOut, Briefcase } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast'; // Added for toast notifications
 
 const settingsOptions = [
   {
@@ -44,6 +59,18 @@ const settingsOptions = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    // In a real app, you'd clear auth tokens, etc.
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    router.push('/login');
+  };
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <header className="mb-8">
@@ -73,9 +100,27 @@ export default function SettingsPage() {
       </Card>
 
       <div className="mt-8 text-center">
-        <Button variant="destructive" className="w-full sm:w-auto">
-          <LogOut className="mr-2 h-4 w-4" /> Logout
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full sm:w-auto">
+              <LogOut className="mr-2 h-4 w-4" /> Logout
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to logout? You will be redirected to the login page.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                Logout
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Separator className="my-8" />
