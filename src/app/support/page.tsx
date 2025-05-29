@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Added import
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -25,11 +26,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription, // Added FormDescription import
 } from "@/components/ui/form";
 
 const supportMessageSchema = z.object({
   message: z.string().min(10, { message: "Message must be at least 10 characters." }).max(1000, { message: "Message cannot exceed 1000 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address for follow-up." }), // Optional: to prefill or ask
+  email: z.string().email({ message: "Please enter a valid email address for follow-up." }),
 });
 
 const faqs = [
