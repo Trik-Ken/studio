@@ -125,7 +125,7 @@ export default function SettingsPage() {
 
       <Separator className="my-8" />
       <div className="text-center text-sm text-muted-foreground space-y-1">
-        <p>B2B Commerce Connect v1.0.0</p>
+        <p>ConTrad v1.0.0</p> {/* Updated App Name */}
         <p>
             <Link href="/terms" className="hover:text-primary hover:underline">Terms of Service</Link> | <Link href="/privacy" className="hover:text-primary hover:underline">Privacy Policy</Link>
         </p>

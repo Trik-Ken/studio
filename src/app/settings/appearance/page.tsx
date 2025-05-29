@@ -73,7 +73,7 @@ export default function AppearanceSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Theme Preference</CardTitle>
-          <CardDescription>Choose how B2B Commerce Connect looks to you. Select a theme or sync with your system.</CardDescription>
+          <CardDescription>Choose how ConTrad looks to you. Select a theme or sync with your system.</CardDescription> {/* Updated App Name */}
         </CardHeader>
         <CardContent>
           <RadioGroup

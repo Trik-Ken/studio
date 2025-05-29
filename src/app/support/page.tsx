@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Added import
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,7 +26,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Added FormDescription import
+  FormDescription,
 } from "@/components/ui/form";
 
 const supportMessageSchema = z.object({
@@ -103,7 +103,7 @@ export default function SupportPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-5 w-5 text-primary" /> Frequently Asked Questions</CardTitle>
-            <CardDescription>Find quick answers to common questions about using B2B Commerce Connect.</CardDescription>
+            <CardDescription>Find quick answers to common questions about using ConTrad.</CardDescription> {/* Updated App Name */}
           </CardHeader>
           <CardContent>
             {faqs.length > 0 ? (
