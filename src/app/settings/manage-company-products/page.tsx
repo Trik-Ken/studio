@@ -67,7 +67,7 @@ const productSchema = z.object({
         message: "Each additional image must be a valid data URI or URL."
     })
   ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]),
-  specificationsText: z.string().optional().or(z.literal('')), 
+  specificationsText: z.string().optional().or(z.literal('')),
   warrantyInfo: z.string().min(1, { message: "Warranty information is required." }),
   returnPolicy: z.string().min(1, { message: "Return policy is required." }),
 });
@@ -140,7 +140,7 @@ export default function ManageCompanyProductsPage() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({ title: "File too large", description: "Logo image must be under 5MB.", variant: "destructive"});
-        event.target.value = ''; 
+        event.target.value = '';
         return;
       }
       setSelectedLogoFile(file);
@@ -199,7 +199,7 @@ export default function ManageCompanyProductsPage() {
             return new Promise<string | null>((resolve) => {
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null);
+                    resolve(null); // Resolve with null instead of rejecting
                     return;
                 }
                 const reader = new FileReader();
@@ -207,7 +207,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null);
+                    resolve(null); // Resolve with null on error
                 };
                 reader.readAsDataURL(file);
             });
@@ -216,20 +216,21 @@ export default function ManageCompanyProductsPage() {
         try {
             const settledPreviewsOrNulls = await Promise.all(filePromises);
             const validNewPreviews = settledPreviewsOrNulls.filter(p => p !== null) as string[];
-            
+
             const combinedPreviews = [...currentPreviews, ...validNewPreviews].slice(0, 6);
             const combinedFormValues = [...currentFormValues, ...validNewPreviews].slice(0, 6);
 
             setAdditionalProductImagePreviews(combinedPreviews);
             productForm.setValue('additionalImageUrls', combinedFormValues, { shouldValidate: true });
-            
+
             if (validNewPreviews.length !== files.length && files.length > 0 && event.target) {
                  event.target.value = '';
             } else if (event.target) {
-                event.target.value = ''; 
+                event.target.value = '';
             }
 
         } catch (error) {
+            // This catch block might not be strictly necessary anymore if all file promises resolve
             console.error("Unexpected error processing additional images:", error);
             toast({ title: "Error", description: "An unexpected error occurred while processing images.", variant: "destructive" });
             if (event.target) event.target.value = '';
@@ -244,7 +245,7 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        gstNumber: company.gstNumber, 
+        gstNumber: company.gstNumber,
         phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint
     };
@@ -299,9 +300,9 @@ export default function ManageCompanyProductsPage() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
-    
-    const additionalImages = product.images && product.images.length > 1 
-        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
+
+    const additionalImages = product.images && product.images.length > 1
+        ? product.images.slice(1).filter(img => img !== product.imageUrl)
         : (product.images?.filter(img => img !== product.imageUrl) || []);
 
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
@@ -347,16 +348,16 @@ export default function ManageCompanyProductsPage() {
       const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
       allImageUrls = [primaryImageUrl, ...uniqueAdditional];
     }
-    allImageUrls = allImageUrls.slice(0, 7); 
+    allImageUrls = allImageUrls.slice(0, 7);
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
-        ...values, // This will include unitQuantity instead of priceUnit/priceForQuantity
+        ...values,
         imageUrl: primaryImageUrl,
         images: allImageUrls,
         specifications: parsedSpecifications,
-        dataAiHint: values.category || "product image", 
+        dataAiHint: values.category || "product image",
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
@@ -368,7 +369,7 @@ export default function ManageCompanyProductsPage() {
     if (editingProduct) {
       const updatedProduct: Product = { ...editingProduct, ...finalProductData };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
-      
+
       const productIndex = mockProducts.findIndex(p => p.id === editingProduct.id);
       if (productIndex !== -1) {
         mockProducts[productIndex] = updatedProduct;
@@ -380,10 +381,10 @@ export default function ManageCompanyProductsPage() {
     } else {
       const newProduct: Product = {
         ...finalProductData,
-        id: `prod-${Date.now()}`, 
+        id: `prod-${Date.now()}`,
       };
       setProducts(prev => [newProduct, ...prev]);
-      mockProducts.unshift(newProduct); 
+      mockProducts.unshift(newProduct);
       toast({
         title: 'Product Added',
         description: `${values.name} has been added to your listings.`,
@@ -452,7 +453,7 @@ export default function ManageCompanyProductsPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/gif"
                       onChange={handleLogoChange}
-                      className="sr-only" 
+                      className="sr-only"
                     />
                   </FormControl>
                 </FormItem>
@@ -599,7 +600,7 @@ export default function ManageCompanyProductsPage() {
 
       <AlertDialog open={isProductModalOpen} onOpenChange={(open) => {
           setIsProductModalOpen(open);
-          if (!open) { 
+          if (!open) {
             setEditingProduct(null);
             setPrimaryProductImagePreview(null);
             setAdditionalProductImagePreviews([]);
@@ -617,7 +618,7 @@ export default function ManageCompanyProductsPage() {
             <Form {...productForm}>
               <form
                   onSubmit={productForm.handleSubmit(onSubmitProduct)}
-                  className="space-y-4" 
+                  className="space-y-4"
               >
                   <FormItem>
                     <FormLabel>Primary Product Image</FormLabel>
@@ -645,7 +646,7 @@ export default function ManageCompanyProductsPage() {
                     <FormDescription className="text-center">Upload the main image for your product from your device (max 5MB).</FormDescription>
                     <FormField
                       control={productForm.control}
-                      name="imageUrl" 
+                      name="imageUrl"
                       render={({ field }) => ( <Input type="hidden" {...field} /> )}
                     />
                      <FormMessage>{productForm.formState.errors.imageUrl?.message}</FormMessage>
@@ -653,8 +654,8 @@ export default function ManageCompanyProductsPage() {
 
                   <FormField
                       control={productForm.control}
-                      name="additionalImageUrls" 
-                      render={() => ( 
+                      name="additionalImageUrls"
+                      render={() => (
                           <FormItem>
                               <FormLabel>Additional Product Images (Up to 6)</FormLabel>
                               <FormControl>
@@ -729,7 +730,7 @@ export default function ManageCompanyProductsPage() {
                       name="unitQuantity"
                       render={({ field }) => (
                           <FormItem>
-                          <FormLabel>Unit Quantity</FormLabel>
+                          <FormLabel>Per Unit Quantity</FormLabel>
                           <FormControl><Input placeholder="e.g., item, box of 10, kg" {...field} /></FormControl>
                            <FormDescription className="text-xs">Describe the unit or quantity this price applies to.</FormDescription>
                           <FormMessage />
@@ -813,3 +814,4 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
+
