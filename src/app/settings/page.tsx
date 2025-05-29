@@ -2,46 +2,44 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, UserCog, ShieldCheck, HelpCircle, Bell, Palette, LogOut, ExternalLink, Briefcase } from 'lucide-react';
+import { ChevronRight, ShieldCheck, HelpCircle, Bell, Palette, LogOut, Briefcase } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 const settingsOptions = [
   {
     id: 'manage-company-products',
     title: 'Manage Company & Products',
     description: 'Edit company details, add new products, and update existing product listings.',
-    icon: Briefcase, 
-    href: '/settings/manage-company-products', 
+    icon: Briefcase,
+    href: '/settings/manage-company-products',
   },
   {
     id: 'security',
     title: 'Security & Login',
     description: 'Manage your password, two-factor authentication, and active sessions.',
     icon: ShieldCheck,
-    href: '/settings/security', 
+    href: '/settings/security',
   },
   {
     id: 'notifications',
     title: 'Notification Preferences',
     description: 'Choose how you receive alerts for messages, orders, and system updates.',
     icon: Bell,
-    href: '/settings/notifications', 
+    href: '/settings/notifications',
   },
   {
     id: 'appearance',
     title: 'Appearance',
     description: 'Customize the look and feel of the app (e.g., theme).',
     icon: Palette,
-    href: '/settings/appearance', 
+    href: '/settings/appearance',
   },
   {
     id: 'help',
     title: 'Help & Support',
     description: 'Access FAQs, contact support, or report an issue.',
     icon: HelpCircle,
-    href: '/support', 
+    href: '/support',
   },
 ];
 
@@ -70,23 +68,10 @@ export default function SettingsPage() {
                 </Link>
               </li>
             ))}
-             {/* Example of a setting with a switch directly on the page */}
-            <li className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                        <Bell className="h-6 w-6 mr-4 text-primary flex-shrink-0" />
-                        <div>
-                            <Label htmlFor="email-notifications" className="text-md font-semibold text-foreground">Email Notifications</Label>
-                            <p className="text-sm text-muted-foreground">Receive important updates via email.</p>
-                        </div>
-                    </div>
-                    <Switch id="email-notifications" defaultChecked />
-                </div>
-            </li>
           </ul>
         </CardContent>
       </Card>
-      
+
       <div className="mt-8 text-center">
         <Button variant="destructive" className="w-full sm:w-auto">
           <LogOut className="mr-2 h-4 w-4" /> Logout
