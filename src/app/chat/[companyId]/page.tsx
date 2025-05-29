@@ -91,21 +91,7 @@ export default function DirectChatPage() {
     setFileToSend(null);
     prefillDoneRef.current = true; 
 
-    setTimeout(() => {
-      const userMessageText = message.text;
-      const replyText = userMessageText.includes("[Attached:")
-        ? "Thanks! We've received your message with the attachment."
-        : "Thanks for your message! We'll get back to you soon.";
-      
-      const reply: ChatMessage = {
-        id: `reply-${Date.now()}`,
-        conversationId: company.id,
-        sender: 'company',
-        text: replyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, reply]);
-    }, 1000);
+    // Removed automatic reply logic
   };
 
   const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
