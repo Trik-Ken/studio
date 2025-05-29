@@ -1,3 +1,4 @@
+
 import { mockCompanies, mockProducts } from '@/lib/mock-data';
 import type { Company } from '@/lib/types';
 import Image from 'next/image';
@@ -8,8 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MessageSquare, Globe, Mail, MapPin } from 'lucide-react';
 
 export default function CompanyProfilePage({ params }: { params: { id: string } }) {
-  const company = mockCompanies.find((c) => c.id === params.id);
-  const companyProducts = mockProducts.filter((p) => p.companyId === params.id);
+  const { id } = params; // Destructure id from params
+  const company = mockCompanies.find((c) => c.id === id);
+  const companyProducts = mockProducts.filter((p) => p.companyId === id);
 
   if (!company) {
     return (
@@ -33,6 +35,7 @@ export default function CompanyProfilePage({ params }: { params: { id: string } 
             height={120}
             className="rounded-lg border bg-muted mb-4 sm:mb-0 sm:mr-6"
             data-ai-hint={company.dataAiHint || "company logo"}
+            unoptimized={company.logoUrl.startsWith('https://placehold.co')}
           />
           <div className="flex-1">
             <CardTitle className="text-3xl font-bold mb-2">{company.name}</CardTitle>
