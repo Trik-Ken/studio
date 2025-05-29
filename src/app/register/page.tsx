@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react'; // Added useEffect
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,18 +23,20 @@ const registerSchema = z.object({
     .regex(/^[0-9A-Z]+$/, { message: "GST number should be alphanumeric."}),
   description: z.string().min(20, { message: "Company description must be at least 20 characters."}),
   address: z.string().min(5, {message: "Address must be at least 5 characters."}),
-  email: z.string().email(), 
-  phoneNumber: z.string(),   
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits." })
+    .regex(/^\+?[0-9\s-()]*$/, {message: "Invalid phone number format."}),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  confirmPassword: z.string().min(8, { message: "Please confirm your password." }),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match.",
+  path: ["confirmPassword"], // Point error to confirmPassword field
 });
 
 export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-
-  const emailFromQuery = useMemo(() => searchParams.get('email') || '', [searchParams]);
-  const phoneFromQuery = useMemo(() => searchParams.get('phone') || '', [searchParams]);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -43,33 +45,31 @@ export default function RegisterPage() {
       gstNumber: '',
       description: '',
       address: '',
-      email: emailFromQuery,
-      phoneNumber: phoneFromQuery,
+      email: '',
+      phoneNumber: '',
+      password: '',
+      confirmPassword: '',
     },
   });
-
-  useEffect(() => {
-    // Update form values if query params change and are different from current form values
-    if (emailFromQuery && emailFromQuery !== form.getValues('email')) {
-      form.setValue('email', emailFromQuery);
-    }
-    if (phoneFromQuery && phoneFromQuery !== form.getValues('phoneNumber')) {
-      form.setValue('phoneNumber', phoneFromQuery);
-    }
-
-    if (!emailFromQuery || !phoneFromQuery) {
-        // Only toast and redirect if essential info is truly missing and not just an initial render state
-        if (!form.getValues('email') && !form.getValues('phoneNumber')) {
-            toast({ title: "Missing information", description: "Email or phone missing for registration.", variant: "destructive"});
-            router.replace('/login'); 
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emailFromQuery, phoneFromQuery, form, router, toast]); // form, router, toast are stable or have their own memoization
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000)); 
+
+    // Check if email or phone number already exists (mock)
+    const emailExists = mockCompanies.some(c => c.contactEmail?.toLowerCase() === values.email.toLowerCase());
+    const phoneExists = mockCompanies.some(c => c.phoneNumber === values.phoneNumber);
+
+    if (emailExists) {
+      toast({ title: "Registration Failed", description: "This email address is already registered.", variant: "destructive"});
+      setIsLoading(false);
+      return;
+    }
+    if (phoneExists) {
+      toast({ title: "Registration Failed", description: "This phone number is already registered.", variant: "destructive"});
+      setIsLoading(false);
+      return;
+    }
 
     const newCompany: Company = {
       id: `comp-${Date.now()}`, 
@@ -81,24 +81,25 @@ export default function RegisterPage() {
       gstNumber: values.gstNumber,
       address: values.address,
       dataAiHint: 'new company' 
+      // Password is not stored in mockCompanies for this prototype
     };
 
     mockCompanies.push(newCompany);
 
     toast({
       title: "Registration Successful!",
-      description: `Welcome, ${newCompany.name}! Your company profile has been created.`,
+      description: `Welcome, ${newCompany.name}! Please login with your new credentials.`,
     });
-    router.push('/');
+    router.push('/login'); // Redirect to login page after registration
     setIsLoading(false);
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 py-8">
       <Card className="w-full max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-3xl font-bold">Create Your Company Profile</CardTitle>
+          <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
           <CardDescription>Fill in the details below to get started.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -106,12 +107,25 @@ export default function RegisterPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Your Company Inc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address (from login attempt)</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} readOnly className="bg-muted/50"/>
+                      <Input type="email" placeholder="you@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,9 +136,22 @@ export default function RegisterPage() {
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number (from login attempt)</FormLabel>
+                    <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" {...field} readOnly className="bg-muted/50"/>
+                      <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Choose a strong password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -132,12 +159,12 @@ export default function RegisterPage() {
               />
               <FormField
                 control={form.control}
-                name="companyName"
+                name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company Name</FormLabel>
+                    <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Company Inc." {...field} />
+                      <Input type="password" placeholder="Re-enter your password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,11 +211,17 @@ export default function RegisterPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Registering...' : 'Complete Registration'}
+                {isLoading ? 'Registering...' : 'Create Account'}
               </Button>
             </form>
           </Form>
            <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="underline hover:text-primary">
+              Login here
+            </Link>
+          </p>
+           <p className="mt-2 text-center text-xs text-muted-foreground">
             By registering, you agree to our{' '}
             <Link href="/terms" className="underline hover:text-primary">
               Terms of Service
