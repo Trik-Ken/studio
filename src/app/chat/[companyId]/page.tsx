@@ -33,7 +33,8 @@ export default function DirectChatPage() {
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
 
-  const productIdFromQuery = useMemo(() => searchParams.get('product'), [searchParams]);
+  const queryString = searchParams.toString();
+  const productIdFromQuery = useMemo(() => new URLSearchParams(queryString).get('product'), [queryString]);
 
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);

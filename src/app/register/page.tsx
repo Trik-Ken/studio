@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -35,6 +35,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams(); // No longer used for pre-filling form but kept for consistency if needed later
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -47,6 +48,19 @@ export default function RegisterPage() {
       confirmPassword: '',
     },
   });
+  
+  // Email and phone are no longer pre-filled from query params, user enters them directly.
+  // Keeping useMemo example for other potential query params if needed in future.
+  const queryString = searchParams.toString(); // Get string for stable dependency
+  const exampleQueryParam = useMemo(() => new URLSearchParams(queryString).get('example'), [queryString]);
+  
+  useEffect(() => {
+    // Example of using a query param if one were present
+    if (exampleQueryParam) {
+      console.log("Example query param:", exampleQueryParam);
+    }
+  }, [exampleQueryParam]);
+
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
@@ -71,11 +85,11 @@ export default function RegisterPage() {
       id: `comp-${Date.now()}`, 
       name: values.companyName,
       logoUrl: 'https://placehold.co/100x100.png', 
-      description: '',
+      description: '', // No longer collected at registration
       contactEmail: values.email,
       phoneNumber: values.phoneNumber,
       gstNumber: values.gstNumber,
-      address: '', 
+      address: '', // No longer collected at registration
       dataAiHint: 'new company' 
       // Password is not stored in mockCompanies for this prototype
     };
