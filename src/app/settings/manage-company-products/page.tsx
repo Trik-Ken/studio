@@ -46,7 +46,7 @@ const companySchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  logoUrl: z.string().optional().or(z.literal('')), 
+  logoUrl: z.string().optional().or(z.literal('')),
 });
 
 const productSchema = z.object({
@@ -63,8 +63,8 @@ const productSchema = z.object({
   ),
   priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
   category: z.string().optional().or(z.literal('')),
-  imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co'), { 
-    message: "Primary image is required. Please upload an image or ensure a valid placeholder is set." 
+  imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co'), {
+    message: "Primary image is required. Please upload an image or ensure a valid placeholder is set."
   }).or(z.literal('')),
   additionalImageUrls: z.array(
      z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), {
@@ -81,7 +81,7 @@ export default function ManageCompanyProductsPage() {
   const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [_selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // Renamed to avoid conflict if needed
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -170,11 +170,11 @@ export default function ManageCompanyProductsPage() {
     }
     toast({ title: "Logo Removed", description: "The company logo has been cleared."});
   };
-  
+
   const handlePrimaryProductImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { 
+      if (file.size > 5 * 1024 * 1024) {
         toast({ title: "File too large", description: "Product image must be under 5MB.", variant: "destructive"});
         event.target.value = '';
         return;
@@ -194,15 +194,15 @@ export default function ManageCompanyProductsPage() {
     if (files) {
         if (files.length > 6) {
             toast({ title: "Too many files", description: "You can select a maximum of 6 additional images.", variant: "destructive" });
-            if (event.target) event.target.value = ''; 
+            if (event.target) event.target.value = '';
             return;
         }
 
         const filePromises = Array.from(files).map(file => {
-            return new Promise<string | null>((resolve) => { 
+            return new Promise<string | null>((resolve) => {
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null); 
+                    resolve(null);
                     return;
                 }
                 const reader = new FileReader();
@@ -210,7 +210,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null); 
+                    resolve(null);
                 };
                 reader.readAsDataURL(file);
             });
@@ -219,12 +219,15 @@ export default function ManageCompanyProductsPage() {
         try {
             const settledPreviewsOrNulls = await Promise.all(filePromises);
             const validPreviews = settledPreviewsOrNulls.filter(p => p !== null) as string[];
-            
-            setAdditionalProductImagePreviews(validPreviews); 
-            productForm.setValue('additionalImageUrls', validPreviews, { shouldValidate: true });
 
-            if (validPreviews.length !== files.length) {
-                 if (event.target) event.target.value = '';
+            setAdditionalProductImagePreviews(prev => [...prev, ...validPreviews].slice(0, 6)); // Add to existing, limit to 6
+            const currentAdditional = productForm.getValues('additionalImageUrls') || [];
+            productForm.setValue('additionalImageUrls', [...currentAdditional, ...validPreviews].slice(0, 6) , { shouldValidate: true });
+
+
+            // If any file failed, clear the input so user can retry the failed ones
+            if (validPreviews.length !== files.length && event.target) {
+                 event.target.value = '';
             }
 
         } catch (error) {
@@ -238,18 +241,18 @@ export default function ManageCompanyProductsPage() {
 
   const onSubmitCompanyDetails = (values: z.infer<typeof companySchema>) => {
     if (!company) return;
-    
+
     const updatedCompanyData: Company = {
         ...company,
-        ...values, 
-        gstNumber: company.gstNumber, 
-        website: company.website, 
+        ...values,
+        gstNumber: company.gstNumber,
+        website: company.website,
         phoneNumber: company.phoneNumber,
-        dataAiHint: company.dataAiHint 
+        dataAiHint: company.dataAiHint
     };
-    
+
     setCompany(updatedCompanyData);
-    
+
     const companyIndex = mockCompanies.findIndex(c => c.id === loggedInCompanyId);
     if (companyIndex !== -1) {
         mockCompanies[companyIndex] = updatedCompanyData;
@@ -299,11 +302,11 @@ export default function ManageCompanyProductsPage() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
-    
-    const additionalImages = product.images && product.images.length > 1 
-        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
-        : (product.images?.filter(img => img !== product.imageUrl) || []); 
-    
+
+    const additionalImages = product.images && product.images.length > 1
+        ? product.images.slice(1).filter(img => img !== product.imageUrl)
+        : (product.images?.filter(img => img !== product.imageUrl) || []);
+
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
     setAdditionalProductImagePreviews(additionalImages);
 
@@ -342,33 +345,33 @@ export default function ManageCompanyProductsPage() {
     if (!company) return;
 
     const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
-    let allImageUrls: string[] = [primaryImageUrl]; 
+    let allImageUrls: string[] = [primaryImageUrl];
 
     if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
       const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
       allImageUrls = [primaryImageUrl, ...uniqueAdditional];
     }
-    allImageUrls = allImageUrls.slice(0, 7); 
+    allImageUrls = allImageUrls.slice(0, 7);
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
         ...values,
-        imageUrl: primaryImageUrl, 
-        images: allImageUrls, 
-        specifications: parsedSpecifications, 
-        dataAiHint: values.category || "product image", 
+        imageUrl: primaryImageUrl,
+        images: allImageUrls,
+        specifications: parsedSpecifications,
+        dataAiHint: values.category || "product image",
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
-    
+
     const { specificationsText, ...finalProductData } = productData;
 
 
-    if (editingProduct) { 
+    if (editingProduct) {
       const updatedProduct: Product = { ...editingProduct, ...finalProductData };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
-      
+
       const productIndex = mockProducts.findIndex(p => p.id === editingProduct.id);
       if (productIndex !== -1) {
         mockProducts[productIndex] = updatedProduct;
@@ -377,13 +380,13 @@ export default function ManageCompanyProductsPage() {
         title: 'Product Updated',
         description: `${values.name} has been updated.`,
       });
-    } else { 
+    } else {
       const newProduct: Product = {
         ...finalProductData,
-        id: `prod-${Date.now()}`, 
+        id: `prod-${Date.now()}`,
       };
       setProducts(prev => [newProduct, ...prev]);
-      mockProducts.unshift(newProduct); 
+      mockProducts.unshift(newProduct);
       toast({
         title: 'Product Added',
         description: `${values.name} has been added to your listings.`,
@@ -427,7 +430,11 @@ export default function ManageCompanyProductsPage() {
             <form onSubmit={companyForm.handleSubmit(onSubmitCompanyDetails)} className="space-y-6">
               <div className="flex flex-col items-center space-y-2 mb-6">
                 <Avatar className="h-32 w-32 border-2 border-primary shadow-sm">
-                  <AvatarImage src={logoPreview || undefined} alt={company.name} data-ai-hint={company.dataAiHint || "company logo"} unoptimized={logoPreview?.startsWith('data:image/') || logoPreview?.startsWith('https://placehold.co')}/>
+                  <AvatarImage
+                    src={logoPreview || undefined}
+                    alt={company.name}
+                    data-ai-hint={company.dataAiHint || "company logo"}
+                  />
                   <AvatarFallback>{company.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex items-center gap-2">
@@ -448,7 +455,7 @@ export default function ManageCompanyProductsPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/gif"
                       onChange={handleLogoChange}
-                      className="sr-only" 
+                      className="sr-only"
                     />
                   </FormControl>
                 </FormItem>
@@ -596,7 +603,7 @@ export default function ManageCompanyProductsPage() {
       <AlertDialog open={isProductModalOpen} onOpenChange={(open) => {
           setIsProductModalOpen(open);
           if (!open) {
-            setEditingProduct(null); 
+            setEditingProduct(null);
             setPrimaryProductImagePreview(null);
             setAdditionalProductImagePreviews([]);
           }
@@ -610,25 +617,25 @@ export default function ManageCompanyProductsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Form {...productForm}>
-            <form 
-                onSubmit={productForm.handleSubmit(onSubmitProduct)} 
+            <form
+                onSubmit={productForm.handleSubmit(onSubmitProduct)}
                 className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-4 custom-scrollbar"
             >
                 <FormItem>
                   <FormLabel>Primary Product Image</FormLabel>
                   <FormControl>
                     <div className="flex flex-col items-center gap-4">
-                        <Image 
-                            src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'} 
-                            alt="Product Preview" 
-                            width={120} 
-                            height={120} 
+                        <Image
+                            src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'}
+                            alt="Product Preview"
+                            width={120}
+                            height={120}
                             className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
                             data-ai-hint="product image"
                             unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
                             onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
                         />
-                        <Input 
+                        <Input
                             id="primary-product-image-upload"
                             type="file"
                             accept="image/*"
@@ -649,7 +656,7 @@ export default function ManageCompanyProductsPage() {
                 <FormField
                     control={productForm.control}
                     name="additionalImageUrls"
-                    render={() => ( 
+                    render={() => (
                         <FormItem>
                             <FormLabel>Additional Product Images (Up to 6)</FormLabel>
                             <FormControl>
@@ -762,7 +769,7 @@ export default function ManageCompanyProductsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Specifications</FormLabel>
-                      <FormControl><Textarea placeholder="Enter each specification on a new line, e.g., Color: Red&#x0a;Material: Steel" {...field} rows={4}/></FormControl>
+                      <FormControl><Textarea placeholder="Enter each specification on a new line, e.g., Color: Red\nMaterial: Steel" {...field} rows={4}/></FormControl>
                       <FormDescription>Key-value pairs, one per line (e.g., Size: Large).</FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -819,7 +826,3 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
-
-    
-
-    

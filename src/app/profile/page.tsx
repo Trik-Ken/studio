@@ -11,6 +11,7 @@ import { Settings, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Company, Product } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Added Avatar imports
 
 export default function ProfilePage() {
   const [company, setCompany] = useState<Company | null>(null);
@@ -24,7 +25,7 @@ export default function ProfilePage() {
     if (currentCompany) {
       const products = mockProducts.filter((p) => p.companyId === loggedInCompanyId);
       setCompanyProducts(products);
-      
+
       const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]));
       setCategories(uniqueCategories.sort());
     }
@@ -44,15 +45,14 @@ export default function ProfilePage() {
       <header className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Image
-              src={company.logoUrl}
-              alt={`${company.name} logo`}
-              width={80}
-              height={80}
-              className="rounded-full border bg-muted"
-              data-ai-hint={company.dataAiHint || "company logo"}
-              unoptimized={company.logoUrl.startsWith('https://placehold.co') || company.logoUrl.startsWith('data:image/')}
-            />
+            <Avatar className="h-20 w-20 border bg-muted"> {/* Using Avatar component */}
+              <AvatarImage
+                src={company.logoUrl}
+                alt={`${company.name} logo`}
+                data-ai-hint={company.dataAiHint || "company logo"}
+              />
+              <AvatarFallback>{company.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground">{company.name}</h1>
               <p className="text-muted-foreground">Your Company Profile</p>
@@ -78,7 +78,7 @@ export default function ProfilePage() {
             </p>
           )}
           {(company.description && (company.contactEmail || company.phoneNumber || company.website || company.address || company.gstNumber)) && <Separator className="my-4" />}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
               <span className="font-semibold text-muted-foreground">Email: </span>
@@ -109,7 +109,7 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
-      
+
       <Separator className="my-8" />
 
       <div>
