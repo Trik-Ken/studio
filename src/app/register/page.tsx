@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,12 +19,12 @@ import { UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({
   companyName: z.string().min(3, { message: "Company name must be at least 3 characters." }),
-  gstNumber: z.string().min(10, { message: "GST number must be at least 10 characters." }) // Simplified validation
+  gstNumber: z.string().min(10, { message: "GST number must be at least 10 characters." }) 
     .regex(/^[0-9A-Z]+$/, { message: "GST number should be alphanumeric."}),
   description: z.string().min(20, { message: "Company description must be at least 20 characters."}),
   address: z.string().min(5, {message: "Address must be at least 5 characters."}),
-  email: z.string().email(), // Will be pre-filled
-  phoneNumber: z.string(),   // Will be pre-filled
+  email: z.string().email(), 
+  phoneNumber: z.string(),   
 });
 
 export default function RegisterPage() {
@@ -33,9 +33,8 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Extract query params for useEffect dependency and defaultValues
-  const emailFromQuery = searchParams.get('email') || '';
-  const phoneFromQuery = searchParams.get('phone') || '';
+  const emailFromQuery = useMemo(() => searchParams.get('email') || '', [searchParams]);
+  const phoneFromQuery = useMemo(() => searchParams.get('phone') || '', [searchParams]);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -50,49 +49,46 @@ export default function RegisterPage() {
   });
 
   useEffect(() => {
-    // Update form values if query params change (though unlikely after initial load)
-    // And perform initial validation/redirect
-    if (emailFromQuery) {
+    // Update form values if query params change and are different from current form values
+    if (emailFromQuery && emailFromQuery !== form.getValues('email')) {
       form.setValue('email', emailFromQuery);
     }
-    if (phoneFromQuery) {
+    if (phoneFromQuery && phoneFromQuery !== form.getValues('phoneNumber')) {
       form.setValue('phoneNumber', phoneFromQuery);
     }
 
     if (!emailFromQuery || !phoneFromQuery) {
-        toast({ title: "Missing information", description: "Email or phone missing for registration.", variant: "destructive"});
-        router.replace('/login'); // Redirect if essential info is missing
+        // Only toast and redirect if essential info is truly missing and not just an initial render state
+        if (!form.getValues('email') && !form.getValues('phoneNumber')) {
+            toast({ title: "Missing information", description: "Email or phone missing for registration.", variant: "destructive"});
+            router.replace('/login'); 
+        }
     }
-  }, [emailFromQuery, phoneFromQuery, form, router, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailFromQuery, phoneFromQuery, form, router, toast]); // form, router, toast are stable or have their own memoization
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Mock API delay
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     const newCompany: Company = {
-      id: `comp-${Date.now()}`, // Simple unique ID generation for mock
+      id: `comp-${Date.now()}`, 
       name: values.companyName,
-      logoUrl: 'https://placehold.co/100x100.png', // Default placeholder logo
+      logoUrl: 'https://placehold.co/100x100.png', 
       description: values.description,
       contactEmail: values.email,
       phoneNumber: values.phoneNumber,
       gstNumber: values.gstNumber,
       address: values.address,
-      dataAiHint: 'new company' // Generic hint
+      dataAiHint: 'new company' 
     };
 
-    // In a real app, this would be an API call.
-    // For this mock, we push to the client-side imported array.
-    // This mutation won't persist across sessions or for other users.
     mockCompanies.push(newCompany);
 
     toast({
       title: "Registration Successful!",
       description: `Welcome, ${newCompany.name}! Your company profile has been created.`,
     });
-
-    // In a real app, you'd set an auth token here and manage loggedInCompanyId globally.
-    // For this prototype, we just navigate. The profile page will still use the hardcoded loggedInCompanyId.
     router.push('/');
     setIsLoading(false);
   };

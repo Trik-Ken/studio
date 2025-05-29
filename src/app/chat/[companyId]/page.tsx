@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { mockCompanies, mockMessages, mockProducts } from '@/lib/mock-data';
 import type { Company, ChatMessage, Product } from '@/lib/types';
@@ -33,8 +33,7 @@ export default function DirectChatPage() {
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
 
-  // Extract productIdFromQuery outside the useEffect that depends on it
-  const productIdFromQuery = searchParams.get('product');
+  const productIdFromQuery = useMemo(() => searchParams.get('product'), [searchParams]);
 
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
@@ -44,23 +43,24 @@ export default function DirectChatPage() {
     const loadedMessages = mockMessages[conversationId] || [];
     setMessages(loadedMessages);
 
-    // Use the productIdFromQuery obtained from outside
     if (productIdFromQuery) {
       if (productContext?.id !== productIdFromQuery) {
         const product = mockProducts.find(p => p.id === productIdFromQuery);
         setProductContext(product);
-        prefillDoneRef.current = false;
+        prefillDoneRef.current = false; // Reset prefill flag when product context changes
         if (product) {
-            setNewMessage('');
+            setNewMessage(''); // Clear message if a new product is in context
         }
       }
     } else {
-      if (productContext) {
-        setProductContext(undefined);
-        prefillDoneRef.current = false;
+      // If productIdFromQuery is null/undefined (no product in query)
+      if (productContext) { // and there was a product context before
+        setProductContext(undefined); // Clear it
+        prefillDoneRef.current = false; // Reset prefill flag
       }
     }
-  }, [companyId, productIdFromQuery, productContext?.id]); // Use productIdFromQuery in dependency array
+  }, [companyId, productIdFromQuery, productContext?.id]);
+
 
   useEffect(() => {
     if (productContext && !prefillDoneRef.current) {
@@ -94,7 +94,7 @@ export default function DirectChatPage() {
     setMessages([...messages, message]);
     setNewMessage('');
     setFileToSend(null);
-    prefillDoneRef.current = true;
+    prefillDoneRef.current = true; // Mark as prefill done so it doesn't overwrite user typing after first send
   };
 
   const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
@@ -115,6 +115,7 @@ export default function DirectChatPage() {
       const fileTypeForDisplay = file.type.startsWith('image/') || file.type.startsWith('video/') ? 'media' : 'document';
       setFileToSend({ name: file.name, type: fileTypeForDisplay });
     }
+    // Reset file input to allow selecting the same file again if needed
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
