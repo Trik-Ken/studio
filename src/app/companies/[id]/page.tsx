@@ -1,5 +1,5 @@
 
-import { mockCompanies, mockProducts } from '@/lib/mock-data';
+import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MessageSquare, Globe, Mail, MapPin } from 'lucide-react';
 
 export default function CompanyProfilePage({ params }: { params: { id: string } }) {
-  const { id } = params; // Destructure id from params
+  const { id } = params; 
   const company = mockCompanies.find((c) => c.id === id);
   const companyProducts = mockProducts.filter((p) => p.companyId === id);
 
@@ -23,6 +23,8 @@ export default function CompanyProfilePage({ params }: { params: { id: string } 
       </div>
     );
   }
+
+  const isOwnProfile = company.id === loggedInCompanyId;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -45,11 +47,13 @@ export default function CompanyProfilePage({ params }: { params: { id: string } 
               {company.contactEmail && <span className="flex items-center"><Mail className="h-4 w-4 mr-1.5"/> {company.contactEmail}</span>}
               {company.website && <span className="flex items-center"><Globe className="h-4 w-4 mr-1.5"/> <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{company.website}</a></span>}
             </div>
-            <Link href={`/chat/${company.id}`} passHref>
-              <Button size="lg">
-                <MessageSquare className="mr-2 h-5 w-5" /> Chat with {company.name}
-              </Button>
-            </Link>
+            {!isOwnProfile && (
+              <Link href={`/chat/${company.id}`} passHref>
+                <Button size="lg">
+                  <MessageSquare className="mr-2 h-5 w-5" /> Chat with {company.name}
+                </Button>
+              </Link>
+            )}
           </div>
         </CardHeader>
       </Card>

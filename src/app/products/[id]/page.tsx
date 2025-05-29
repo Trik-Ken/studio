@@ -1,6 +1,6 @@
 
 'use client'; 
-import { mockProducts, mockCompanies } from '@/lib/mock-data';
+import { mockProducts, mockCompanies, loggedInCompanyId } from '@/lib/mock-data';
 import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,11 +10,11 @@ import { Separator } from '@/components/ui/separator';
 import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation'; // Import useParams
+import { useParams } from 'next/navigation';
 
 export default function ProductDetailPage() {
-  const params = useParams<{ id: string }>(); // Get params using the hook
-  const productId = params.id; // Extract id
+  const params = useParams<{ id: string }>(); 
+  const productId = params.id; 
 
   const product = mockProducts.find((p) => p.id === productId);
   const company = product ? mockCompanies.find((c) => c.id === product.companyId) : undefined;
@@ -28,13 +28,12 @@ export default function ProductDetailPage() {
     if (product?.imageUrl) {
       return [product.imageUrl];
     }
-    // Ensure a fallback with a consistent data-ai-hint for placeholder
     return ['https://placehold.co/600x400.png']; 
   }, [product]);
 
   useEffect(() => {
-    setCurrentImageIndex(0); // Reset when product changes
-  }, [product]); // Product itself depends on productId
+    setCurrentImageIndex(0); 
+  }, [product]); 
 
   if (!product) {
     return (
@@ -67,6 +66,8 @@ export default function ProductDetailPage() {
     return `$${product.price.toFixed(2)} / ${unitString}`;
   };
 
+  const isOwnProduct = company?.id === loggedInCompanyId;
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Card className="overflow-hidden shadow-xl">
@@ -80,7 +81,7 @@ export default function ProductDetailPage() {
               priority={currentImageIndex === 0}
               data-ai-hint={displayImages[currentImageIndex] === 'https://placehold.co/600x400.png' ? 'product placeholder' : (product.dataAiHint || "product detail")}
               key={displayImages[currentImageIndex]} 
-              unoptimized={displayImages[currentImageIndex].startsWith('https://placehold.co')}
+              unoptimized={displayImages[currentImageIndex].startsWith('https://placehold.co') || displayImages[currentImageIndex].startsWith('data:image/')}
             />
             {displayImages.length > 1 && (
               <>
@@ -121,7 +122,7 @@ export default function ProductDetailPage() {
                     layout="fill" 
                     objectFit="cover" 
                     data-ai-hint={img === 'https://placehold.co/600x400.png' ? 'product placeholder' : (product.dataAiHint || "product thumbnail")} 
-                    unoptimized={img.startsWith('https://placehold.co')}
+                    unoptimized={img.startsWith('https://placehold.co') || img.startsWith('data:image/')}
                   />
                 </div>
               ))}
@@ -168,7 +169,7 @@ export default function ProductDetailPage() {
                 <h2 className="text-xl font-semibold mb-2">Sold By</h2>
                 <Link href={`/companies/${company.id}`} className="group">
                   <div className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
-                    <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full border" data-ai-hint={company.dataAiHint || "company logo"}/>
+                    <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full border" data-ai-hint={company.dataAiHint || "company logo"} unoptimized={company.logoUrl.startsWith('https://placehold.co') || company.logoUrl.startsWith('data:image/')}/>
                     <div>
                       <p className="text-primary font-medium group-hover:underline">{company.name}</p>
                       <p className="text-xs text-muted-foreground">View company profile</p>
@@ -182,7 +183,7 @@ export default function ProductDetailPage() {
           <Separator className="my-6" />
 
           <div className="flex flex-col sm:flex-row gap-4">
-            {company && (
+            {company && !isOwnProduct && (
               <Link href={`/chat/${company.id}?product=${product.id}`} passHref className="flex-1">
                 <Button variant="outline" size="lg" className="w-full">
                   <MessageSquare className="mr-2 h-5 w-5" /> Contact Seller
