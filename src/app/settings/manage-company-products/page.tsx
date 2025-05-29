@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, Info, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ const companySchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  logoUrl: z.string().optional().or(z.literal('')), // Stays as URL, could be Data URI
+  logoUrl: z.string().optional().or(z.literal('')), 
 });
 
 const productSchema = z.object({
@@ -62,12 +62,16 @@ const productSchema = z.object({
     z.number({invalid_type_error: "Quantity must be a whole number."}).int().min(1, { message: "Quantity must be at least 1."})
   ),
   priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
-  category: z.string().optional().or(z.literal('')), // Category is now optional
+  category: z.string().optional().or(z.literal('')),
   imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), { 
     message: "Primary image is required. Upload an image or ensure a valid placeholder/URL." 
-  }).or(z.literal('')), // Will store Data URI or original URL
-  additionalImageUrls: z.string().optional().or(z.literal('')), 
-  specificationsText: z.string().optional().or(z.literal('')), // For textarea input
+  }).or(z.literal('')),
+  additionalImageUrls: z.array(
+    z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), {
+        message: "Each additional image must be a valid data URI or URL."
+    })
+  ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]),
+  specificationsText: z.string().optional().or(z.literal('')),
   warrantyInfo: z.string().min(1, { message: "Warranty information is required." }),
   returnPolicy: z.string().min(1, { message: "Return policy is required." }),
 });
@@ -83,6 +87,8 @@ export default function ManageCompanyProductsPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [primaryProductImagePreview, setPrimaryProductImagePreview] = useState<string | null>(null);
+  const [additionalProductImagePreviews, setAdditionalProductImagePreviews] = useState<string[]>([]);
+
 
   useEffect(() => {
     const currentCompany = mockCompanies.find(c => c.id === loggedInCompanyId);
@@ -114,7 +120,7 @@ export default function ManageCompanyProductsPage() {
       priceUnit: 'unit',
       category: '',
       imageUrl: 'https://placehold.co/600x400.png',
-      additionalImageUrls: '',
+      additionalImageUrls: [],
       specificationsText: '',
       warrantyInfo: '',
       returnPolicy: '',
@@ -145,7 +151,7 @@ export default function ManageCompanyProductsPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
-        companyForm.setValue('logoUrl', reader.result as string); // Update form value for submission
+        companyForm.setValue('logoUrl', reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -154,7 +160,7 @@ export default function ManageCompanyProductsPage() {
   const handlePrimaryProductImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit for product image
+      if (file.size > 5 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Product image must be under 5MB.", variant: "destructive"});
         return;
       }
@@ -168,6 +174,43 @@ export default function ManageCompanyProductsPage() {
     }
   };
 
+  const handleAdditionalProductImagesChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+        if (files.length > 6) {
+            toast({ title: "Too many files", description: "You can select a maximum of 6 additional images.", variant: "destructive" });
+            // Optionally clear the file input
+            if (event.target) event.target.value = ''; 
+            return;
+        }
+        const newFilePreviews: string[] = [];
+        const filePromises = Array.from(files).map(file => {
+            return new Promise<string>((resolve, reject) => {
+                if (file.size > 2 * 1024 * 1024) { // 2MB limit per image
+                    toast({ title: "File too large", description: `${file.name} is over 2MB. Please select smaller images.`, variant: "destructive"});
+                    reject(new Error(`${file.name} is too large`));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
+            });
+        });
+
+        try {
+            const settledPreviews = await Promise.all(filePromises);
+            setAdditionalProductImagePreviews(settledPreviews);
+            productForm.setValue('additionalImageUrls', settledPreviews, { shouldValidate: true });
+        } catch (error) {
+            console.error("Error reading files for additional images:", error);
+            // Individual file errors are toasted inside the promise
+             // Clear the file input if there was an error with any file
+            if (event.target) event.target.value = '';
+        }
+    }
+  };
+
 
   const onSubmitCompanyDetails = (values: z.infer<typeof companySchema>) => {
     if (!company) return;
@@ -175,7 +218,7 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        logoUrl: values.logoUrl || company.logoUrl, // Use form value which might be dataURI
+        logoUrl: values.logoUrl || company.logoUrl,
         website: company.website, 
         dataAiHint: company.dataAiHint 
     };
@@ -211,6 +254,7 @@ export default function ManageCompanyProductsPage() {
   const handleAddNewProduct = () => {
     setEditingProduct(null);
     setPrimaryProductImagePreview('https://placehold.co/600x400.png');
+    setAdditionalProductImagePreviews([]);
     productForm.reset({
       name: '',
       description: '',
@@ -219,7 +263,7 @@ export default function ManageCompanyProductsPage() {
       priceUnit: 'unit',
       category: '',
       imageUrl: 'https://placehold.co/600x400.png',
-      additionalImageUrls: '',
+      additionalImageUrls: [],
       specificationsText: '',
       warrantyInfo: 'Standard 1-year warranty.',
       returnPolicy: '30-day return policy, see terms for details.',
@@ -229,10 +273,14 @@ export default function ManageCompanyProductsPage() {
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
-    const additionalUrls = product.images && product.images.length > 1 ? product.images.slice(1).join('\n') : '';
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
     
+    const additionalImages = product.images && product.images.length > 1 
+        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
+        : [];
+    setAdditionalProductImagePreviews(additionalImages);
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
+
     productForm.reset({
       id: product.id,
       name: product.name,
@@ -242,7 +290,7 @@ export default function ManageCompanyProductsPage() {
       priceUnit: product.priceUnit,
       category: product.category || '',
       imageUrl: product.imageUrl || 'https://placehold.co/600x400.png',
-      additionalImageUrls: additionalUrls,
+      additionalImageUrls: additionalImages,
       specificationsText: specsText,
       warrantyInfo: product.warrantyInfo || '',
       returnPolicy: product.returnPolicy || '',
@@ -268,16 +316,15 @@ export default function ManageCompanyProductsPage() {
 
     const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
     let allImageUrls = [primaryImageUrl];
-    if (values.additionalImageUrls) {
-      const additionalUrls = values.additionalImageUrls.split('\n').map(url => url.trim()).filter(url => url && url !== primaryImageUrl);
-      allImageUrls = [...allImageUrls, ...additionalUrls];
+    if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
+      allImageUrls = [...allImageUrls, ...values.additionalImageUrls];
     }
     allImageUrls = [...new Set(allImageUrls)].slice(0, 7); 
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
-        ...values, // This now includes category (optional), warrantyInfo, returnPolicy
+        ...values,
         imageUrl: primaryImageUrl,
         images: allImageUrls,
         specifications: parsedSpecifications, 
@@ -285,7 +332,6 @@ export default function ManageCompanyProductsPage() {
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
-    // Remove specificationsText as it's processed
     const { specificationsText, ...finalProductData } = productData;
 
 
@@ -315,6 +361,7 @@ export default function ManageCompanyProductsPage() {
     setIsProductModalOpen(false);
     setEditingProduct(null);
     setPrimaryProductImagePreview(null);
+    setAdditionalProductImagePreviews([]);
   };
 
 
@@ -433,7 +480,7 @@ export default function ManageCompanyProductsPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>Manage Products</CardTitle>
-            <CardDescription>Add new products or edit existing ones. Primary image from device, additional via URLs.</CardDescription>
+            <CardDescription>Add new products or edit existing ones. Upload primary and additional images directly from your device.</CardDescription>
           </div>
           <Button onClick={handleAddNewProduct} className="w-full sm:w-auto">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Product
@@ -451,7 +498,7 @@ export default function ManageCompanyProductsPage() {
                     height={80}
                     className="rounded-md object-cover aspect-square border bg-muted flex-shrink-0"
                     data-ai-hint={product.dataAiHint || "product image"}
-                    unoptimized={product.imageUrl.startsWith('data:image/')} // For Data URIs
+                    unoptimized={product.imageUrl.startsWith('data:image/')}
                     onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/80x80.png'}}
                   />
                   <div className="flex-grow min-w-0">
@@ -508,7 +555,8 @@ export default function ManageCompanyProductsPage() {
           setIsProductModalOpen(open);
           if (!open) {
             setEditingProduct(null); 
-            setPrimaryProductImagePreview(null); // Clear preview on close
+            setPrimaryProductImagePreview(null);
+            setAdditionalProductImagePreviews([]);
           }
       }}>
         <AlertDialogContent className="max-w-2xl">
@@ -516,7 +564,7 @@ export default function ManageCompanyProductsPage() {
             <AlertDialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</AlertDialogTitle>
             <AlertDialogDescription>
               {editingProduct ? `Update the details for ${editingProduct.name}.` : 'Enter the details for your new product.'}
-              <br/>Primary image from device. Up to 6 additional images via URLs.
+              <br/>Upload a primary image and up to 6 additional images from your device (max 7 total images).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Form {...productForm}>
@@ -547,8 +595,7 @@ export default function ManageCompanyProductsPage() {
                         />
                     </div>
                   </FormControl>
-                  <FormDescription className="text-center">Upload the main image for your product from your device.</FormDescription>
-                  {/* Hidden FormField for imageUrl to be validated by Zod, populated by file upload */}
+                  <FormDescription className="text-center">Upload the main image for your product from your device (max 5MB).</FormDescription>
                   <FormField
                     control={productForm.control}
                     name="imageUrl"
@@ -558,23 +605,45 @@ export default function ManageCompanyProductsPage() {
                 </FormItem>
 
                 <FormField
-                  control={productForm.control}
-                  name="additionalImageUrls"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Additional Image URLs (Optional, up to 6)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                            placeholder="https://example.com/image2.png&#x0a;https://example.com/image3.png" 
-                            {...field} 
-                            rows={3} 
-                        />
-                      </FormControl>
-                      <FormDescription>One URL per line. Combined with primary, max 7 images.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                    control={productForm.control}
+                    name="additionalImageUrls"
+                    render={() => ( 
+                        <FormItem>
+                            <FormLabel>Additional Product Images (Up to 6)</FormLabel>
+                            <FormControl>
+                                <Input
+                                    id="additional-product-images-upload"
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleAdditionalProductImagesChange}
+                                    className="w-full"
+                                />
+                            </FormControl>
+                            <FormDescription>Select up to 6 additional images from your device (max 2MB each).</FormDescription>
+                            {additionalProductImagePreviews.length > 0 && (
+                                <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                                    {additionalProductImagePreviews.map((previewUrl, index) => (
+                                        <div key={index} className="relative aspect-square">
+                                            <Image
+                                                src={previewUrl}
+                                                alt={`Additional product image ${index + 1}`}
+                                                layout="fill"
+                                                objectFit="cover"
+                                                className="rounded-md border bg-muted"
+                                                data-ai-hint="product image"
+                                                unoptimized={previewUrl.startsWith('data:image/')}
+                                            />
+                                            {/* TODO: Button to remove this specific image */}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                           <FormMessage>{productForm.formState.errors.additionalImageUrls?.message || (productForm.formState.errors.additionalImageUrls as any)?.root?.message}</FormMessage>
+                        </FormItem>
+                    )}
                 />
+
                 <FormField
                   control={productForm.control}
                   name="name"
@@ -683,7 +752,7 @@ export default function ManageCompanyProductsPage() {
             </form>
           </Form>
           <AlertDialogFooter className="mt-6 pt-4 border-t">
-            <AlertDialogCancel onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); setPrimaryProductImagePreview(null); }}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); setPrimaryProductImagePreview(null); setAdditionalProductImagePreviews([]); }}>Cancel</AlertDialogCancel>
             <Button onClick={productForm.handleSubmit(onSubmitProduct)} disabled={productForm.formState.isSubmitting}>
               {productForm.formState.isSubmitting ? "Saving..." : (editingProduct ? 'Save Changes' : 'Add Product')}
             </Button>
