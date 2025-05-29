@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -22,41 +23,52 @@ export default function DirectChatPage() {
   const [company, setCompany] = useState<Company | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [initialProduct, setInitialProduct] = useState<Product | undefined>(undefined);
+  const [productContext, setProductContext] = useState<Product | undefined>(undefined);
+  const prefillDoneRef = useRef<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Load company details
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
     setCompany(foundCompany);
 
-    // Find the conversation ID. In a real app, this would be more robust.
-    // For mock, we assume the companyId can map to a conversationId or is the conversationId.
+    // Load initial chat messages
     const conversationId = companyId; // Simplified for mock
     const loadedMessages = mockMessages[conversationId] || [];
-    
-    const productId = searchParams.get('product');
-    if (productId) {
-      const product = mockProducts.find(p => p.id === productId);
-      setInitialProduct(product);
-      if (product && !loadedMessages.some(msg => msg.text.includes(product.name))) {
-         // Add a context message if not already present (e.g. if user navigates away and back)
-         const contextMessage: ChatMessage = {
-          id: `product-context-${Date.now()}`,
-          conversationId: conversationId,
-          sender: 'user',
-          text: `I'm interested in your product: ${product.name}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages([contextMessage, ...loadedMessages]);
-      } else {
-        setMessages(loadedMessages);
+    setMessages(loadedMessages);
+
+    // Check for product context from query params
+    const productIdFromQuery = searchParams.get('product');
+
+    if (productIdFromQuery) {
+      // If the product ID from URL changes, or if it's new and different from current context
+      if (productContext?.id !== productIdFromQuery) {
+        const product = mockProducts.find(p => p.id === productIdFromQuery);
+        setProductContext(product);
+        prefillDoneRef.current = false; // Reset prefill flag for new product
+        if (product) { // Only clear message if we are setting a new product context
+            setNewMessage(''); // Clear existing input for new prefill
+        }
       }
     } else {
-      setMessages(loadedMessages);
+      // Product ID removed from URL or not present
+      if (productContext) { // If there was a product context, clear it
+        setProductContext(undefined);
+        prefillDoneRef.current = false;
+        // Optionally clear newMessage if product context is removed and input was prefilled:
+        // if (newMessage.startsWith("I'm interested in your product:")) setNewMessage(''); 
+      }
     }
+  }, [companyId, searchParams, productContext?.id]); // Effect runs if companyId, searchParams, or the ID of productContext changes
 
-  }, [companyId, searchParams]);
+  useEffect(() => {
+    // Pre-fill message input if there's product context and it hasn't been pre-filled yet for this product
+    if (productContext && !prefillDoneRef.current) {
+      setNewMessage(`I'm interested in your product: ${productContext.name}. `);
+      prefillDoneRef.current = true; // Mark as pre-filled for this specific product context
+    }
+  }, [productContext]); // This effect runs when productContext (the object itself) changes
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,6 +87,7 @@ export default function DirectChatPage() {
     };
     setMessages([...messages, message]);
     setNewMessage('');
+    prefillDoneRef.current = true; // After sending a message, consider prefill "handled" even if it was custom
 
     // Mock company reply
     setTimeout(() => {
@@ -125,11 +138,6 @@ export default function DirectChatPage() {
 
       {/* Messages Area */}
       <ScrollArea className="flex-grow p-4 space-y-4">
-        {initialProduct && !messages.some(msg => msg.text.includes(initialProduct.name)) && (
-          <div className="border p-3 rounded-md bg-background mb-3 shadow-sm text-sm text-muted-foreground">
-            You are inquiring about: <Link href={`/products/${initialProduct.id}`} className="font-semibold text-primary hover:underline">{initialProduct.name}</Link>
-          </div>
-        )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
