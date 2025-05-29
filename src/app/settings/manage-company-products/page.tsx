@@ -241,7 +241,7 @@ export default function ManageCompanyProductsPage() {
     
     const updatedCompanyData: Company = {
         ...company,
-        ...values, // values already contains name, description, contactEmail, address, logoUrl
+        ...values, 
         gstNumber: company.gstNumber, 
         website: company.website, 
         phoneNumber: company.phoneNumber,
@@ -427,7 +427,7 @@ export default function ManageCompanyProductsPage() {
             <form onSubmit={companyForm.handleSubmit(onSubmitCompanyDetails)} className="space-y-6">
               <div className="flex flex-col items-center space-y-2 mb-6">
                 <Avatar className="h-32 w-32 border-2 border-primary shadow-sm">
-                  <AvatarImage src={logoPreview || undefined} alt={company.name} data-ai-hint={company.dataAiHint || "company logo"}/>
+                  <AvatarImage src={logoPreview || undefined} alt={company.name} data-ai-hint={company.dataAiHint || "company logo"} unoptimized={logoPreview?.startsWith('data:image/') || logoPreview?.startsWith('https://placehold.co')}/>
                   <AvatarFallback>{company.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex items-center gap-2">
@@ -543,7 +543,7 @@ export default function ManageCompanyProductsPage() {
                     unoptimized={product.imageUrl.startsWith('data:image/') || product.imageUrl.startsWith('https://placehold.co')}
                     onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/80x80.png'}}
                   />
-                  <div className="flex-grow min-w-0">
+                  <div className="flex-grow min-w-0 overflow-hidden">
                     <h3 className="font-semibold text-lg truncate" title={product.name}>{product.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       ${product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}

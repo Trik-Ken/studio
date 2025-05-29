@@ -1,3 +1,6 @@
+
+'use client';
+
 import type { Product } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,38 +12,53 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const displayPriceUnit = () => {
+    if (!product.priceUnit) return ''; // Handle case where priceUnit might be undefined
+    if (product.priceForQuantity === 1) {
+      return `/ ${product.priceUnit}`;
+    }
+    return `/ ${product.priceForQuantity} ${product.priceUnit}${product.priceForQuantity === 1 ? '' : 's'}`;
+  };
+
+  const safeImageUrl = product.imageUrl || 'https://placehold.co/600x400.png';
+  const isPlaceholder = safeImageUrl.startsWith('https://placehold.co');
+
   return (
     <Link href={`/products/${product.id}`} className="block group h-full">
       <Card className="overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
         <CardHeader className="p-0">
-          <div className="aspect-[3/2] relative w-full">
+          <div className="aspect-[3/2] relative w-full bg-muted">
             <Image
-              src={product.imageUrl}
-              alt={product.name}
+              src={safeImageUrl}
+              alt={product.name || 'Product Image'}
               layout="fill"
               objectFit="cover"
-              data-ai-hint={product.dataAiHint || "product image"}
+              data-ai-hint={isPlaceholder ? 'product placeholder' : (product.dataAiHint || "product image")}
+              unoptimized={safeImageUrl.startsWith('https://placehold.co') || safeImageUrl.startsWith('data:image/')}
+              onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/600x400.png'; (e.target as HTMLImageElement).srcset = ''}}
             />
           </div>
         </CardHeader>
-        <CardContent className="p-4 flex flex-col flex-grow">
+        <CardContent className="p-4 flex flex-col flex-grow min-w-0"> {/* Added min-w-0 here */}
           <CardTitle className="text-lg font-semibold mb-1 truncate group-hover:text-primary transition-colors">
-            {product.name}
+            {product.name || 'Unnamed Product'}
           </CardTitle>
           <CardDescription className="text-sm text-muted-foreground mb-2 h-10 overflow-hidden flex-shrink-0">
-            {product.description.substring(0, 60)}...
+            {product.description ? (product.description.length > 60 ? `${product.description.substring(0, 60)}...` : product.description) : 'No description available.'}
           </CardDescription>
           <div className="mt-auto pt-2">
             <div className="flex items-center justify-between">
               <p className="text-xl font-bold text-primary">
-                ${product.price.toFixed(2)}
+                ${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
               </p>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Package className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                <span className="truncate">
-                  {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity === 1 ? '' : 's'}
-                </span>
-              </div>
+              {product.priceUnit && typeof product.priceForQuantity === 'number' && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Package className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                  <span className="truncate">
+                    {displayPriceUnit()}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
