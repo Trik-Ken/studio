@@ -71,7 +71,7 @@ const productSchema = z.object({
         message: "Each additional image must be a valid data URI or URL."
     })
   ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]),
-  specificationsText: z.string().optional().or(z.literal('')), // Stored as multiline string
+  specificationsText: z.string().optional().or(z.literal('')), 
   warrantyInfo: z.string().min(1, { message: "Warranty information is required." }),
   returnPolicy: z.string().min(1, { message: "Return policy is required." }),
 });
@@ -204,7 +204,7 @@ export default function ManageCompanyProductsPage() {
             return new Promise<string | null>((resolve) => {
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null);
+                    resolve(null); // Resolve with null for large files
                     return;
                 }
                 const reader = new FileReader();
@@ -212,7 +212,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null);
+                    resolve(null); // Resolve with null on error
                 };
                 reader.readAsDataURL(file);
             });
@@ -227,11 +227,11 @@ export default function ManageCompanyProductsPage() {
 
             setAdditionalProductImagePreviews(combinedPreviews);
             productForm.setValue('additionalImageUrls', combinedFormValues, { shouldValidate: true });
-
-            if (validNewPreviews.length !== files.length && event.target) {
+            
+            if (validNewPreviews.length !== files.length && files.length > 0 && event.target) {
                  event.target.value = '';
             } else if (event.target) {
-                event.target.value = ''; // Clear input after successful processing of all selected files
+                event.target.value = ''; 
             }
 
         } catch (error) {
@@ -249,7 +249,7 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        gstNumber: company.gstNumber, // Assuming these are not editable in this form
+        gstNumber: company.gstNumber, 
         website: company.website,
         phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint
@@ -308,8 +308,8 @@ export default function ManageCompanyProductsPage() {
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
     
     const additionalImages = product.images && product.images.length > 1 
-        ? product.images.slice(1).filter(img => img !== product.imageUrl) // Exclude primary if present
-        : (product.images?.filter(img => img !== product.imageUrl) || []); // Handle if images has only primary or is empty
+        ? product.images.slice(1).filter(img => img !== product.imageUrl) 
+        : (product.images?.filter(img => img !== product.imageUrl) || []);
 
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
     setAdditionalProductImagePreviews(additionalImages);
@@ -355,7 +355,7 @@ export default function ManageCompanyProductsPage() {
       const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
       allImageUrls = [primaryImageUrl, ...uniqueAdditional];
     }
-    allImageUrls = allImageUrls.slice(0, 7); // Ensure max 7 images (1 primary + 6 additional)
+    allImageUrls = allImageUrls.slice(0, 7); 
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
@@ -364,17 +364,15 @@ export default function ManageCompanyProductsPage() {
         imageUrl: primaryImageUrl,
         images: allImageUrls,
         specifications: parsedSpecifications,
-        dataAiHint: values.category || "product image", // Use category for AI hint, fallback
+        dataAiHint: values.category || "product image", 
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
 
-    // Remove specificationsText as it's now parsed into specifications array
     const { specificationsText, ...finalProductData } = productData;
 
 
     if (editingProduct) {
-      // Update existing product
       const updatedProduct: Product = { ...editingProduct, ...finalProductData };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
       
@@ -387,13 +385,12 @@ export default function ManageCompanyProductsPage() {
         description: `${values.name} has been updated.`,
       });
     } else {
-      // Add new product
       const newProduct: Product = {
         ...finalProductData,
-        id: `prod-${Date.now()}`, // Generate a simple unique ID
+        id: `prod-${Date.now()}`, 
       };
       setProducts(prev => [newProduct, ...prev]);
-      mockProducts.unshift(newProduct); // Add to the global mock data
+      mockProducts.unshift(newProduct); 
       toast({
         title: 'Product Added',
         description: `${values.name} has been added to your listings.`,
@@ -462,7 +459,7 @@ export default function ManageCompanyProductsPage() {
                       type="file"
                       accept="image/png, image/jpeg, image/gif"
                       onChange={handleLogoChange}
-                      className="sr-only" // Keep hidden, triggered by button
+                      className="sr-only" 
                     />
                   </FormControl>
                 </FormItem>
@@ -557,7 +554,7 @@ export default function ManageCompanyProductsPage() {
                     unoptimized={product.imageUrl?.startsWith('data:image/') || product.imageUrl?.startsWith('https://placehold.co')}
                     onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/80x80.png'}}
                   />
-                  <div className="flex-grow w-full min-w-0 overflow-hidden"> {/* Added w-full */}
+                  <div className="flex-grow w-full min-w-0 overflow-hidden">
                     <h3 className="font-semibold text-lg truncate" title={product.name}>{product.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       ${product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
@@ -607,210 +604,208 @@ export default function ManageCompanyProductsPage() {
         </CardContent>
       </Card>
 
-      {/* Product Add/Edit Modal (AlertDialog) */}
       <AlertDialog open={isProductModalOpen} onOpenChange={(open) => {
           setIsProductModalOpen(open);
-          if (!open) { // Reset previews when dialog closes
+          if (!open) { 
             setEditingProduct(null);
             setPrimaryProductImagePreview(null);
             setAdditionalProductImagePreviews([]);
           }
       }}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
+        <AlertDialogContent className="max-w-2xl flex flex-col max-h-[calc(100vh-4rem)] sm:max-h-[90vh] p-0">
+          <AlertDialogHeader className="p-6 pb-4 border-b flex-shrink-0">
             <AlertDialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</AlertDialogTitle>
             <AlertDialogDescription>
               {editingProduct ? `Update the details for ${editingProduct.name}.` : 'Enter the details for your new product.'}
               <br/>Upload a primary image and up to 6 additional images from your device (max 7 total images, 5MB per image).
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Form {...productForm}>
-            <form
-                onSubmit={productForm.handleSubmit(onSubmitProduct)}
-                className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-4 custom-scrollbar" // Added custom-scrollbar
-            >
-                {/* Primary Product Image Upload */}
-                <FormItem>
-                  <FormLabel>Primary Product Image</FormLabel>
-                  <FormControl>
-                    <div className="flex flex-col items-center gap-4">
-                        <Image
-                            src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'}
-                            alt="Product Preview"
-                            width={120}
-                            height={120}
-                            className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
-                            data-ai-hint="product image"
-                            unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
-                            onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
-                        />
-                        <Input
-                            id="primary-product-image-upload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePrimaryProductImageChange}
-                            className="w-full max-w-xs"
-                        />
-                    </div>
-                  </FormControl>
-                  <FormDescription className="text-center">Upload the main image for your product from your device (max 5MB).</FormDescription>
-                  {/* Hidden input to store the data URI for form submission, linked to FormField */}
+          <div className="flex-grow overflow-y-auto custom-scrollbar px-6 py-4">
+            <Form {...productForm}>
+              <form
+                  onSubmit={productForm.handleSubmit(onSubmitProduct)}
+                  className="space-y-4" 
+              >
+                  <FormItem>
+                    <FormLabel>Primary Product Image</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col items-center gap-4">
+                          <Image
+                              src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'}
+                              alt="Product Preview"
+                              width={120}
+                              height={120}
+                              className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
+                              data-ai-hint="product image"
+                              unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
+                              onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
+                          />
+                          <Input
+                              id="primary-product-image-upload"
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePrimaryProductImageChange}
+                              className="w-full max-w-xs"
+                          />
+                      </div>
+                    </FormControl>
+                    <FormDescription className="text-center">Upload the main image for your product from your device (max 5MB).</FormDescription>
+                    <FormField
+                      control={productForm.control}
+                      name="imageUrl" 
+                      render={({ field }) => ( <Input type="hidden" {...field} /> )}
+                    />
+                     <FormMessage>{productForm.formState.errors.imageUrl?.message}</FormMessage>
+                  </FormItem>
+
+                  <FormField
+                      control={productForm.control}
+                      name="additionalImageUrls" 
+                      render={() => ( 
+                          <FormItem>
+                              <FormLabel>Additional Product Images (Up to 6)</FormLabel>
+                              <FormControl>
+                                  <Input
+                                      id="additional-product-images-upload"
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      onChange={handleAdditionalProductImagesChange}
+                                      className="w-full"
+                                  />
+                              </FormControl>
+                              <FormDescription>Select up to 6 additional images from your device (max 5MB each).</FormDescription>
+                              {additionalProductImagePreviews.length > 0 && (
+                                  <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                                      {additionalProductImagePreviews.map((previewUrl, index) => (
+                                          <div key={index} className="relative aspect-square">
+                                              <Image
+                                                  src={previewUrl}
+                                                  alt={`Additional product image ${index + 1}`}
+                                                  layout="fill"
+                                                  objectFit="cover"
+                                                  className="rounded-md border bg-muted"
+                                                  data-ai-hint="product image"
+                                                  unoptimized={previewUrl.startsWith('data:image/') || previewUrl.startsWith('https://placehold.co')}
+                                              />
+                                          </div>
+                                      ))}
+                                  </div>
+                              )}
+                             <FormMessage>{productForm.formState.errors.additionalImageUrls?.message || (productForm.formState.errors.additionalImageUrls as any)?.root?.message}</FormMessage>
+                          </FormItem>
+                      )}
+                  />
+
                   <FormField
                     control={productForm.control}
-                    name="imageUrl" // This field will store the data URI or placeholder
-                    render={({ field }) => ( <Input type="hidden" {...field} /> )}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Name</FormLabel>
+                        <FormControl><Input placeholder="e.g., Super Widget Model X" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                   <FormMessage>{productForm.formState.errors.imageUrl?.message}</FormMessage>
-                </FormItem>
-
-                {/* Additional Product Images Upload */}
-                <FormField
+                  <FormField
                     control={productForm.control}
-                    name="additionalImageUrls" // This field will store an array of data URIs
-                    render={() => ( // No field from render needed if we manage input separately
-                        <FormItem>
-                            <FormLabel>Additional Product Images (Up to 6)</FormLabel>
-                            <FormControl>
-                                <Input
-                                    id="additional-product-images-upload"
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleAdditionalProductImagesChange}
-                                    className="w-full"
-                                />
-                            </FormControl>
-                            <FormDescription>Select up to 6 additional images from your device (max 5MB each).</FormDescription>
-                            {additionalProductImagePreviews.length > 0 && (
-                                <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-                                    {additionalProductImagePreviews.map((previewUrl, index) => (
-                                        <div key={index} className="relative aspect-square">
-                                            <Image
-                                                src={previewUrl}
-                                                alt={`Additional product image ${index + 1}`}
-                                                layout="fill"
-                                                objectFit="cover"
-                                                className="rounded-md border bg-muted"
-                                                data-ai-hint="product image"
-                                                unoptimized={previewUrl.startsWith('data:image/') || previewUrl.startsWith('https://placehold.co')}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                           <FormMessage>{productForm.formState.errors.additionalImageUrls?.message || (productForm.formState.errors.additionalImageUrls as any)?.root?.message}</FormMessage>
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                  control={productForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Name</FormLabel>
-                      <FormControl><Input placeholder="e.g., Super Widget Model X" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={productForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Description</FormLabel>
-                      <FormControl><Textarea placeholder="Detailed product description, features, benefits..." {...field} rows={3} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                    control={productForm.control}
-                    name="price"
+                    name="description"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Price ($)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="e.g., 99.99" {...field} /></FormControl>
+                      <FormItem>
+                        <FormLabel>Product Description</FormLabel>
+                        <FormControl><Textarea placeholder="Detailed product description, features, benefits..." {...field} rows={3} /></FormControl>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <FormField
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                      control={productForm.control}
+                      name="price"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Price ($)</FormLabel>
+                          <FormControl><Input type="number" step="0.01" placeholder="e.g., 99.99" {...field} /></FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={productForm.control}
+                      name="priceForQuantity"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Items per Price</FormLabel>
+                          <FormControl><Input type="number" inputMode="numeric" pattern="[0-9]*" step="1" placeholder="e.g., 1" {...field} /></FormControl>
+                           <FormDescription className="text-xs">How many items this price is for.</FormDescription>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={productForm.control}
+                      name="priceUnit"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Unit Name (Singular)</FormLabel>
+                          <FormControl><Input placeholder="e.g., item, panel, kg" {...field} /></FormControl>
+                          <FormDescription className="text-xs">The name of one item/unit.</FormDescription>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                  </div>
+                  <FormField
                     control={productForm.control}
-                    name="priceForQuantity"
+                    name="category"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Items per Price</FormLabel>
-                        <FormControl><Input type="number" inputMode="numeric" pattern="[0-9]*" step="1" placeholder="e.g., 1" {...field} /></FormControl>
-                         <FormDescription className="text-xs">How many items this price is for.</FormDescription>
+                      <FormItem>
+                        <FormLabel>Category (Optional)</FormLabel>
+                        <FormControl><Input placeholder="e.g., Electronics, Industrial Parts" {...field} /></FormControl>
+                        <FormDescription>Helps organize products on your profile page.</FormDescription>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <FormField
+                  />
+                  <FormField
                     control={productForm.control}
-                    name="priceUnit"
+                    name="specificationsText"
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Unit Name (Singular)</FormLabel>
-                        <FormControl><Input placeholder="e.g., item, panel, kg" {...field} /></FormControl>
-                        <FormDescription className="text-xs">The name of one item/unit.</FormDescription>
+                      <FormItem>
+                        <FormLabel>Specifications</FormLabel>
+                        <FormControl><Textarea placeholder="Enter each specification on a new line, e.g., Color: Red\nMaterial: Steel" {...field} rows={4}/></FormControl>
+                        <FormDescription>Key-value pairs, one per line (e.g., Size: Large).</FormDescription>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                </div>
-                <FormField
-                  control={productForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category (Optional)</FormLabel>
-                      <FormControl><Input placeholder="e.g., Electronics, Industrial Parts" {...field} /></FormControl>
-                      <FormDescription>Helps organize products on your profile page.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={productForm.control}
-                  name="specificationsText"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Specifications</FormLabel>
-                      <FormControl><Textarea placeholder="Enter each specification on a new line, e.g., Color: Red\nMaterial: Steel" {...field} rows={4}/></FormControl>
-                      <FormDescription>Key-value pairs, one per line (e.g., Size: Large).</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={productForm.control}
-                  name="warrantyInfo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Warranty Information</FormLabel>
-                      <FormControl><Textarea placeholder="Describe the product warranty..." {...field} rows={3}/></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={productForm.control}
-                  name="returnPolicy"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Return Policy</FormLabel>
-                      <FormControl><Textarea placeholder="Describe the return policy..." {...field} rows={3}/></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-            </form>
-          </Form>
-          <AlertDialogFooter className="mt-6 pt-4 border-t">
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="warrantyInfo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Warranty Information</FormLabel>
+                        <FormControl><Textarea placeholder="Describe the product warranty..." {...field} rows={3}/></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="returnPolicy"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Return Policy</FormLabel>
+                        <FormControl><Textarea placeholder="Describe the return policy..." {...field} rows={3}/></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </form>
+            </Form>
+          </div>
+          <AlertDialogFooter className="p-6 pt-4 border-t flex-shrink-0">
             <AlertDialogCancel onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); setPrimaryProductImagePreview(null); setAdditionalProductImagePreviews([]); }}>Cancel</AlertDialogCancel>
             <Button onClick={productForm.handleSubmit(onSubmitProduct)} disabled={productForm.formState.isSubmitting}>
               {productForm.formState.isSubmitting ? "Saving..." : (editingProduct ? 'Save Changes' : 'Add Product')}
@@ -818,7 +813,6 @@ export default function ManageCompanyProductsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Custom scrollbar style for the modal */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
