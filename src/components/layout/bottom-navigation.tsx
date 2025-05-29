@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, MessageCircle, User, Cog } from 'lucide-react';
+import { Search, MessageCircle, User } from 'lucide-react'; // Removed Cog icon
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Explore', icon: Search },
   { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/profile', label: 'Profile', icon: User },
-  { href: '/settings', label: 'Settings', icon: Cog },
+  // { href: '/settings', label: 'Settings', icon: Cog }, // Settings item removed
 ];
 
 export function BottomNavigation() {
