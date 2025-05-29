@@ -1,3 +1,4 @@
+
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -48,7 +49,7 @@ export default function ProfilePage() {
 
       <Card className="mb-8 shadow-lg">
         <CardHeader>
-          <CardTitle>Company Details</CardTitle>
+          <CardTitle>Description</CardTitle>
           <CardDescription>View your company's public information.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
