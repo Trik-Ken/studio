@@ -146,9 +146,9 @@ export default function ProductDetailPage() {
                 <h2 className="text-xl font-semibold mb-3">Specifications</h2>
                 <ul className="space-y-2">
                   {product.specifications.map((spec) => (
-                    <li key={spec.key} className="flex justify-between text-sm">
+                    <li key={spec.key} className="flex flex-col sm:flex-row sm:justify-between text-sm py-1">
                       <span className="font-medium text-muted-foreground">{spec.key}:</span>
-                      <span className="text-foreground text-right">{spec.value}</span>
+                      <span className="text-foreground sm:text-right">{spec.value}</span>
                     </li>
                   ))}
                 </ul>
@@ -180,19 +180,21 @@ export default function ProductDetailPage() {
             )}
           </div>
           
-          <Separator className="my-6" />
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            {company && !isOwnProduct && (
-              <Link href={`/chat/${company.id}?product=${product.id}`} passHref className="flex-1">
-                <Button variant="outline" size="lg" className="w-full">
-                  <MessageSquare className="mr-2 h-5 w-5" /> Contact Seller
-                </Button>
-              </Link>
-            )}
-          </div>
+          {!isOwnProduct && company && (
+            <>
+              <Separator className="my-6" />
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href={`/chat/${company.id}?product=${product.id}`} passHref className="flex-1">
+                  <Button variant="outline" size="lg" className="w-full">
+                    <MessageSquare className="mr-2 h-5 w-5" /> Contact Seller
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
