@@ -5,13 +5,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { mockCompanies, mockMessages, mockProducts } from '@/lib/mock-data';
 import type { Company, ChatMessage, Product } from '@/lib/types';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageBubble } from '@/components/message-bubble';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Phone, Info, Send, Paperclip, Smile, Image as ImageIcon, Video as VideoIcon, FileText as FileTextIcon } from 'lucide-react';
+import { ArrowLeft, Phone, Info, Send, Paperclip, Smile, ImagePlus, FileText as FileTextIcon, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -25,6 +24,7 @@ export default function DirectChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [productContext, setProductContext] = useState<Product | undefined>(undefined);
+  const [fileToSend, setFileToSend] = useState<{ name: string; type: 'media' | 'document' } | null>(null);
   const prefillDoneRef = useRef<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,54 +69,51 @@ export default function DirectChatPage() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() === '' || !company) return;
+    if ((newMessage.trim() === '' && !fileToSend) || !company) return;
+
+    let messageText = newMessage.trim();
+    if (fileToSend) {
+      messageText += `${messageText ? ' ' : ''}[Attached: ${fileToSend.name}]`;
+    }
+
+    if (messageText.trim() === '') return; // Ensure there's some content to send
 
     const message: ChatMessage = {
       id: `msg-${Date.now()}`,
       conversationId: company.id,
       sender: 'user',
-      text: newMessage,
+      text: messageText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages([...messages, message]);
     setNewMessage('');
+    setFileToSend(null); // Clear the selected file
     prefillDoneRef.current = true; 
 
     setTimeout(() => {
+      const userMessageText = message.text;
+      const replyText = userMessageText.includes("[Attached:")
+        ? "Thanks! We've received your message with the attachment."
+        : "Thanks for your message! We'll get back to you soon.";
+      
       const reply: ChatMessage = {
         id: `reply-${Date.now()}`,
         conversationId: company.id,
         sender: 'company',
-        text: "Thanks for your message! We'll get back to you soon.",
+        text: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, reply]);
     }, 1000);
   };
 
-  const handleAttachmentSelect = (type: 'image' | 'video' | 'document') => {
-    // Placeholder for actual attachment handling logic
-    console.log(`Selected to attach a ${type}`);
-    // In a real app, this would open a file picker or other UI
-    const attachmentMessage: ChatMessage = {
-      id: `msg-attachment-${Date.now()}`,
-      conversationId: company!.id,
-      sender: 'user',
-      text: `[Attachment: User selected a ${type}]`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages(prev => [...prev, attachmentMessage]);
-    // Mock company reply for attachment
-    setTimeout(() => {
-      const reply: ChatMessage = {
-        id: `reply-attachment-${Date.now()}`,
-        conversationId: company!.id,
-        sender: 'company',
-        text: `We've received your ${type} selection. (This is a mock response)`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, reply]);
-    }, 1500);
+  const handleAttachmentSelect = (type: 'media' | 'document') => {
+    // In a real app, this would open a file picker.
+    // For now, we'll just simulate a file being selected.
+    const mockFileName = type === 'media' ? 'media_file.jpg' : 'document.pdf';
+    setFileToSend({ name: mockFileName, type });
+    console.log(`Staged ${type} for sending: ${mockFileName}`);
+    // Popover should close automatically on item click if using <PopoverClose> or managing open state
   };
 
   if (!company) {
@@ -159,8 +156,16 @@ export default function DirectChatPage() {
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      <form onSubmit={handleSendMessage} className="p-3 border-t bg-background shadow-top-sm">
-        <div className="flex items-center space-x-2">
+      <div className="p-3 border-t bg-background shadow-top-sm">
+        {fileToSend && (
+          <div className="mb-2 p-2 border rounded-md flex justify-between items-center text-sm bg-muted/50">
+            <span className="truncate">Selected: {fileToSend.name} ({fileToSend.type})</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => setFileToSend(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" type="button">
@@ -169,13 +174,10 @@ export default function DirectChatPage() {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">
               <div className="flex flex-col space-y-1">
-                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('image')}>
-                  <ImageIcon className="mr-2 h-4 w-4" /> Image
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentSelect('media')}>
+                  <ImagePlus className="mr-2 h-4 w-4" /> Media (Image/Video)
                 </Button>
-                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('video')}>
-                  <VideoIcon className="mr-2 h-4 w-4" /> Video
-                </Button>
-                <Button variant="ghost" className="justify-start px-3 py-2 h-auto" onClick={() => handleAttachmentSelect('document')}>
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentSelect('document')}>
                   <FileTextIcon className="mr-2 h-4 w-4" /> Document
                 </Button>
               </div>
@@ -194,8 +196,8 @@ export default function DirectChatPage() {
           <Button type="submit" size="icon" className="rounded-full bg-primary hover:bg-primary/90">
             <Send className="h-5 w-5 text-primary-foreground" />
           </Button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
