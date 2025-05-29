@@ -1,18 +1,22 @@
 
-'use client'; // Added 'use client' for useState and useEffect
+'use client'; 
 import { mockProducts, mockCompanies } from '@/lib/mock-data';
 import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card'; // Removed CardDescription, CardTitle
+import { Card, CardContent, CardHeader } from '@/components/ui/card'; 
 import { Separator } from '@/components/ui/separator';
 import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React, { useState, useEffect } from 'react'; // Added useState, useEffect
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation'; // Import useParams
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = mockProducts.find((p) => p.id === params.id);
+export default function ProductDetailPage() {
+  const params = useParams<{ id: string }>(); // Get params using the hook
+  const productId = params.id; // Extract id
+
+  const product = mockProducts.find((p) => p.id === productId);
   const company = product ? mockCompanies.find((c) => c.id === product.companyId) : undefined;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -24,12 +28,13 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     if (product?.imageUrl) {
       return [product.imageUrl];
     }
-    return ['https://placehold.co/600x400.png?text=No+Image']; // Fallback
+    // Ensure a fallback with a consistent data-ai-hint for placeholder
+    return ['https://placehold.co/600x400.png']; 
   }, [product]);
 
   useEffect(() => {
     setCurrentImageIndex(0); // Reset when product changes
-  }, [product]);
+  }, [product]); // Product itself depends on productId
 
   if (!product) {
     return (
@@ -71,11 +76,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               src={displayImages[currentImageIndex]}
               alt={`${product.name} - image ${currentImageIndex + 1}`}
               layout="fill"
-              objectFit="contain" // Changed to contain to see full image
+              objectFit="contain" 
               priority={currentImageIndex === 0}
-              data-ai-hint={product.dataAiHint || "product detail"}
-              key={displayImages[currentImageIndex]} // Add key for re-renders
-              unoptimized={true} // For placeholder.co if it has issues with Next/Image optimization
+              data-ai-hint={displayImages[currentImageIndex] === 'https://placehold.co/600x400.png' ? 'product placeholder' : (product.dataAiHint || "product detail")}
+              key={displayImages[currentImageIndex]} 
+              unoptimized={displayImages[currentImageIndex].startsWith('https://placehold.co')}
             />
             {displayImages.length > 1 && (
               <>
@@ -110,7 +115,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && handleThumbnailClick(idx)}
                 >
-                  <Image src={img} alt={`${product.name} thumbnail ${idx+1}`} layout="fill" objectFit="cover" data-ai-hint={product.dataAiHint || "product thumbnail"} unoptimized={true}/>
+                  <Image 
+                    src={img} 
+                    alt={`${product.name} thumbnail ${idx+1}`} 
+                    layout="fill" 
+                    objectFit="cover" 
+                    data-ai-hint={img === 'https://placehold.co/600x400.png' ? 'product placeholder' : (product.dataAiHint || "product thumbnail")} 
+                    unoptimized={img.startsWith('https://placehold.co')}
+                  />
                 </div>
               ))}
             </div>
