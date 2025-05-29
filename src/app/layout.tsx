@@ -38,11 +38,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <head><meta name="description" content="Connecting businesses for commerce with ConTrad." />{/* Updated App Name */}</head>
+      <head><meta name="description" content="Connecting businesses for commerce with ConTrad." /></head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
         <div className="flex min-h-screen flex-col">
-          {showGlobalHeader && <GlobalHeader />}
-          <main className={`flex-grow ${showBottomNav ? 'pb-20' : ''} ${showGlobalHeader ? 'pt-16' : ''}`}>
+          {showGlobalHeader && <GlobalHeader />}<main className={`flex-grow ${showBottomNav ? 'pb-20' : ''} ${showGlobalHeader ? 'pt-16' : ''}`}>
             {children}
           </main>
           {showBottomNav && <BottomNavigation />}
