@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, Info } from 'lucide-react';
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, Info, UploadCloud } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ const companySchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  logoUrl: z.string().optional().or(z.literal('')),
+  logoUrl: z.string().optional().or(z.literal('')), // Stays as URL, could be Data URI
 });
 
 const productSchema = z.object({
@@ -62,9 +62,14 @@ const productSchema = z.object({
     z.number({invalid_type_error: "Quantity must be a whole number."}).int().min(1, { message: "Quantity must be at least 1."})
   ),
   priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
-  category: z.string().min(1, {message: "Category is required."}),
-  imageUrl: z.string().url({message: "Primary image URL must be valid."}).or(z.literal('')).refine(val => val.trim() !== '', { message: "Primary image URL is required." }),
-  additionalImageUrls: z.string().optional().or(z.literal('')), // Textarea for multiple URLs, one per line
+  category: z.string().optional().or(z.literal('')), // Category is now optional
+  imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), { 
+    message: "Primary image is required. Upload an image or ensure a valid placeholder/URL." 
+  }).or(z.literal('')), // Will store Data URI or original URL
+  additionalImageUrls: z.string().optional().or(z.literal('')), 
+  specificationsText: z.string().optional().or(z.literal('')), // For textarea input
+  warrantyInfo: z.string().min(1, { message: "Warranty information is required." }),
+  returnPolicy: z.string().min(1, { message: "Return policy is required." }),
 });
 
 export default function ManageCompanyProductsPage() {
@@ -77,6 +82,7 @@ export default function ManageCompanyProductsPage() {
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [primaryProductImagePreview, setPrimaryProductImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     const currentCompany = mockCompanies.find(c => c.id === loggedInCompanyId);
@@ -107,8 +113,11 @@ export default function ManageCompanyProductsPage() {
       priceForQuantity: 1,
       priceUnit: 'unit',
       category: '',
-      imageUrl: '',
+      imageUrl: 'https://placehold.co/600x400.png',
       additionalImageUrls: '',
+      specificationsText: '',
+      warrantyInfo: '',
+      returnPolicy: '',
     },
   });
 
@@ -136,10 +145,29 @@ export default function ManageCompanyProductsPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
+        companyForm.setValue('logoUrl', reader.result as string); // Update form value for submission
       };
       reader.readAsDataURL(file);
     }
   };
+  
+  const handlePrimaryProductImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit for product image
+        toast({ title: "File too large", description: "Product image must be under 5MB.", variant: "destructive"});
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setPrimaryProductImagePreview(dataUri);
+        productForm.setValue('imageUrl', dataUri, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const onSubmitCompanyDetails = (values: z.infer<typeof companySchema>) => {
     if (!company) return;
@@ -147,7 +175,7 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        logoUrl: logoPreview || company.logoUrl, 
+        logoUrl: values.logoUrl || company.logoUrl, // Use form value which might be dataURI
         website: company.website, 
         dataAiHint: company.dataAiHint 
     };
@@ -158,9 +186,6 @@ export default function ManageCompanyProductsPage() {
     if (companyIndex !== -1) {
         mockCompanies[companyIndex] = updatedCompanyData;
     }
-    if (selectedLogoFile) {
-      console.log('Logo file to upload (mock):', selectedLogoFile.name);
-    }
 
     toast({
       title: 'Company Details Updated',
@@ -168,8 +193,24 @@ export default function ManageCompanyProductsPage() {
     });
   };
 
+  const formatSpecificationsToText = (specs: {key: string, value: string}[]) => {
+    return specs.map(spec => `${spec.key}: ${spec.value}`).join('\n');
+  };
+
+  const parseSpecificationsFromText = (text: string): {key: string, value: string}[] => {
+    if (!text.trim()) return [];
+    return text.split('\n').map(line => {
+      const parts = line.split(':');
+      const key = parts[0]?.trim();
+      const value = parts.slice(1).join(':').trim();
+      return { key, value };
+    }).filter(spec => spec.key && spec.value);
+  };
+
+
   const handleAddNewProduct = () => {
     setEditingProduct(null);
+    setPrimaryProductImagePreview('https://placehold.co/600x400.png');
     productForm.reset({
       name: '',
       description: '',
@@ -179,6 +220,9 @@ export default function ManageCompanyProductsPage() {
       category: '',
       imageUrl: 'https://placehold.co/600x400.png',
       additionalImageUrls: '',
+      specificationsText: '',
+      warrantyInfo: 'Standard 1-year warranty.',
+      returnPolicy: '30-day return policy, see terms for details.',
     });
     setIsProductModalOpen(true);
   };
@@ -186,6 +230,9 @@ export default function ManageCompanyProductsPage() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     const additionalUrls = product.images && product.images.length > 1 ? product.images.slice(1).join('\n') : '';
+    const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
+    
+    setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
     productForm.reset({
       id: product.id,
       name: product.name,
@@ -196,6 +243,9 @@ export default function ManageCompanyProductsPage() {
       category: product.category || '',
       imageUrl: product.imageUrl || 'https://placehold.co/600x400.png',
       additionalImageUrls: additionalUrls,
+      specificationsText: specsText,
+      warrantyInfo: product.warrantyInfo || '',
+      returnPolicy: product.returnPolicy || '',
     });
     setIsProductModalOpen(true);
   };
@@ -219,25 +269,28 @@ export default function ManageCompanyProductsPage() {
     const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
     let allImageUrls = [primaryImageUrl];
     if (values.additionalImageUrls) {
-      const additionalUrls = values.additionalImageUrls.split('\n').map(url => url.trim()).filter(url => url !== '' && url !== primaryImageUrl);
+      const additionalUrls = values.additionalImageUrls.split('\n').map(url => url.trim()).filter(url => url && url !== primaryImageUrl);
       allImageUrls = [...allImageUrls, ...additionalUrls];
     }
-    allImageUrls = [...new Set(allImageUrls)].slice(0, 7); // Remove duplicates and cap at 7
+    allImageUrls = [...new Set(allImageUrls)].slice(0, 7); 
+
+    const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
-        ...values,
+        ...values, // This now includes category (optional), warrantyInfo, returnPolicy
         imageUrl: primaryImageUrl,
         images: allImageUrls,
-        specifications: editingProduct?.specifications || [], 
-        warrantyInfo: editingProduct?.warrantyInfo || "Standard warranty", 
-        returnPolicy: editingProduct?.returnPolicy || "30-day returns", 
+        specifications: parsedSpecifications, 
         dataAiHint: values.category || "product image",
         companyId: loggedInCompanyId,
         companyName: company.name,
     };
+    // Remove specificationsText as it's processed
+    const { specificationsText, ...finalProductData } = productData;
+
 
     if (editingProduct) { 
-      const updatedProduct: Product = { ...editingProduct, ...productData };
+      const updatedProduct: Product = { ...editingProduct, ...finalProductData };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
       const productIndex = mockProducts.findIndex(p => p.id === editingProduct.id);
       if (productIndex !== -1) {
@@ -249,7 +302,7 @@ export default function ManageCompanyProductsPage() {
       });
     } else { 
       const newProduct: Product = {
-        ...productData,
+        ...finalProductData,
         id: `prod-${Date.now()}`, 
       };
       setProducts(prev => [newProduct, ...prev]);
@@ -261,6 +314,7 @@ export default function ManageCompanyProductsPage() {
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
+    setPrimaryProductImagePreview(null);
   };
 
 
@@ -271,6 +325,9 @@ export default function ManageCompanyProductsPage() {
       </div>
     );
   }
+
+  const watchedImageUrl = productForm.watch('imageUrl');
+
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 mb-20">
@@ -376,7 +433,7 @@ export default function ManageCompanyProductsPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>Manage Products</CardTitle>
-            <CardDescription>Add new products or edit existing ones from your company's listings. Category is mandatory.</CardDescription>
+            <CardDescription>Add new products or edit existing ones. Primary image from device, additional via URLs.</CardDescription>
           </div>
           <Button onClick={handleAddNewProduct} className="w-full sm:w-auto">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Product
@@ -394,6 +451,7 @@ export default function ManageCompanyProductsPage() {
                     height={80}
                     className="rounded-md object-cover aspect-square border bg-muted flex-shrink-0"
                     data-ai-hint={product.dataAiHint || "product image"}
+                    unoptimized={product.imageUrl.startsWith('data:image/')} // For Data URIs
                     onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/80x80.png'}}
                   />
                   <div className="flex-grow min-w-0">
@@ -401,7 +459,7 @@ export default function ManageCompanyProductsPage() {
                     <p className="text-sm text-muted-foreground">
                       ${product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{product.category || 'Uncategorized'}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
                   </div>
                   <div className="flex gap-2 mt-3 sm:mt-0 flex-shrink-0 self-start sm:self-center">
@@ -448,50 +506,57 @@ export default function ManageCompanyProductsPage() {
 
       <AlertDialog open={isProductModalOpen} onOpenChange={(open) => {
           setIsProductModalOpen(open);
-          if (!open) setEditingProduct(null); 
+          if (!open) {
+            setEditingProduct(null); 
+            setPrimaryProductImagePreview(null); // Clear preview on close
+          }
       }}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</AlertDialogTitle>
             <AlertDialogDescription>
               {editingProduct ? `Update the details for ${editingProduct.name}.` : 'Enter the details for your new product.'}
-              <br/>Category is mandatory. Primary image URL is required. Up to 6 additional images can be added.
+              <br/>Primary image from device. Up to 6 additional images via URLs.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Form {...productForm}>
             <form 
                 onSubmit={productForm.handleSubmit(onSubmitProduct)} 
-                className="space-y-4 max-h-[60vh] overflow-y-auto p-1 pr-4 custom-scrollbar"
+                className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-4 custom-scrollbar"
             >
-                <FormField
-                  control={productForm.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Primary Product Image URL</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-4">
-                            <Image 
-                                src={field.value || 'https://placehold.co/100x100.png'} 
-                                alt="Product Preview" 
-                                width={80} 
-                                height={80} 
-                                className="rounded-md border object-cover aspect-square bg-muted flex-shrink-0"
-                                data-ai-hint="product placeholder"
-                                onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/100x100.png'}}
-                            />
-                            <Input 
-                                placeholder="https://example.com/primary-image.png" 
-                                {...field} 
-                                className="flex-grow"
-                            />
-                        </div>
-                      </FormControl>
-                      <FormDescription>This image will be shown on product cards.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Primary Product Image</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-col items-center gap-4">
+                        <Image 
+                            src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'} 
+                            alt="Product Preview" 
+                            width={120} 
+                            height={120} 
+                            className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
+                            data-ai-hint="product image"
+                            unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') }
+                            onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
+                        />
+                        <Input 
+                            id="primary-product-image-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePrimaryProductImageChange}
+                            className="w-full max-w-xs"
+                        />
+                    </div>
+                  </FormControl>
+                  <FormDescription className="text-center">Upload the main image for your product from your device.</FormDescription>
+                  {/* Hidden FormField for imageUrl to be validated by Zod, populated by file upload */}
+                  <FormField
+                    control={productForm.control}
+                    name="imageUrl"
+                    render={({ field }) => ( <Input type="hidden" {...field} /> )}
+                  />
+                   <FormMessage>{productForm.formState.errors.imageUrl?.message}</FormMessage>
+                </FormItem>
+
                 <FormField
                   control={productForm.control}
                   name="additionalImageUrls"
@@ -569,14 +634,48 @@ export default function ManageCompanyProductsPage() {
                     )}
                     />
                 </div>
-                 <FormField
+                <FormField
                   control={productForm.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Category (Optional)</FormLabel>
                       <FormControl><Input placeholder="e.g., Electronics, Industrial Parts" {...field} /></FormControl>
-                      <FormDescription>Category is mandatory for product organization.</FormDescription>
+                      <FormDescription>Helps organize products on your profile page.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={productForm.control}
+                  name="specificationsText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Specifications</FormLabel>
+                      <FormControl><Textarea placeholder="Enter each specification on a new line, e.g., Color: Red&#x0a;Material: Steel" {...field} rows={4}/></FormControl>
+                      <FormDescription>Key-value pairs, one per line (e.g., Size: Large).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={productForm.control}
+                  name="warrantyInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Warranty Information</FormLabel>
+                      <FormControl><Textarea placeholder="Describe the product warranty..." {...field} rows={3}/></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={productForm.control}
+                  name="returnPolicy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Return Policy</FormLabel>
+                      <FormControl><Textarea placeholder="Describe the return policy..." {...field} rows={3}/></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -584,7 +683,7 @@ export default function ManageCompanyProductsPage() {
             </form>
           </Form>
           <AlertDialogFooter className="mt-6 pt-4 border-t">
-            <AlertDialogCancel onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); }}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); setPrimaryProductImagePreview(null); }}>Cancel</AlertDialogCancel>
             <Button onClick={productForm.handleSubmit(onSubmitProduct)} disabled={productForm.formState.isSubmitting}>
               {productForm.formState.isSubmitting ? "Saving..." : (editingProduct ? 'Save Changes' : 'Add Product')}
             </Button>
@@ -610,3 +709,4 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
+
