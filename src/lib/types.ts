@@ -13,6 +13,7 @@ export interface Product {
   category?: string;
   rating?: number;
   reviewsCount?: number;
+  quantityAvailable?: number; // Added quantity field
   dataAiHint?: string;
 }
 

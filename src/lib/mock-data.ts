@@ -57,6 +57,7 @@ export const mockProducts: Product[] = [
     category: 'Electronics',
     rating: 4.8,
     reviewsCount: 120,
+    quantityAvailable: 500,
     dataAiHint: 'processor chip'
   },
   {
@@ -77,6 +78,7 @@ export const mockProducts: Product[] = [
     category: 'Building Materials',
     rating: 4.5,
     reviewsCount: 85,
+    quantityAvailable: 2000,
     dataAiHint: 'insulation panel'
   },
   {
@@ -97,6 +99,7 @@ export const mockProducts: Product[] = [
     category: 'Machinery',
     rating: 4.9,
     reviewsCount: 45,
+    quantityAvailable: 15,
     dataAiHint: 'laser cutter'
   },
   {
@@ -115,6 +118,7 @@ export const mockProducts: Product[] = [
     companyName: 'Innovatech Solutions',
     pricePerUnit: 999999.99,
     category: 'Experimental Tech',
+    quantityAvailable: 1,
     dataAiHint: 'futuristic device'
   },
 ];
