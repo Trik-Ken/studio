@@ -111,7 +111,7 @@ export default function LoginPage() {
             </Link>
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            (Hint: Use any existing company email/phone and &quot;password123&quot; to login)
+            (Hint: Use any existing company email/phone from mock data and &quot;password123&quot; to login. E.g., sales@innovatech.com or 1-800-555-0100)
           </p>
         </CardContent>
       </Card>
