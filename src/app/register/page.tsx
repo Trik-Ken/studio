@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react'; // Added useEffect
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,8 +21,6 @@ const registerSchema = z.object({
   companyName: z.string().min(3, { message: "Company name must be at least 3 characters." }),
   gstNumber: z.string().min(10, { message: "GST number must be at least 10 characters." }) 
     .regex(/^[0-9A-Z]+$/, { message: "GST number should be alphanumeric."}),
-  description: z.string().min(20, { message: "Company description must be at least 20 characters."}),
-  address: z.string().min(5, {message: "Address must be at least 5 characters."}),
   email: z.string().email({ message: "Please enter a valid email address." }),
   phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits." })
     .regex(/^\+?[0-9\s-()]*$/, {message: "Invalid phone number format."}),
@@ -43,8 +41,6 @@ export default function RegisterPage() {
     defaultValues: {
       companyName: '',
       gstNumber: '',
-      description: '',
-      address: '',
       email: '',
       phoneNumber: '',
       password: '',
@@ -75,11 +71,11 @@ export default function RegisterPage() {
       id: `comp-${Date.now()}`, 
       name: values.companyName,
       logoUrl: 'https://placehold.co/100x100.png', 
-      description: values.description,
+      description: '', // Description will be added later
       contactEmail: values.email,
       phoneNumber: values.phoneNumber,
       gstNumber: values.gstNumber,
-      address: values.address,
+      address: '', // Address will be added later
       dataAiHint: 'new company' 
       // Password is not stored in mockCompanies for this prototype
     };
@@ -179,33 +175,6 @@ export default function RegisterPage() {
                     <FormControl>
                       <Input placeholder="e.g., 22AAAAA0000A1Z5" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Briefly describe your company and what it offers." {...field} rows={3} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123 Main Street, City, Country" {...field} />
-                    </FormControl>
-                     <FormDescription>Your company's primary business address.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
