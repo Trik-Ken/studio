@@ -61,9 +61,9 @@ export default function ProductDetailPage() {
   const priceDisplayString = () => {
     const unitString = `${product.priceForQuantity} ${product.priceUnit}${product.priceForQuantity === 1 ? '' : 's'}`;
     if (product.priceForQuantity === 1) {
-      return `$${product.price.toFixed(2)} / ${product.priceUnit}`;
+      return `₹${product.price.toFixed(2)} / ${product.priceUnit}`;
     }
-    return `$${product.price.toFixed(2)} / ${unitString}`;
+    return `₹${product.price.toFixed(2)} / ${unitString}`;
   };
 
   const isOwnProduct = company?.id === loggedInCompanyId;
@@ -197,4 +197,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-

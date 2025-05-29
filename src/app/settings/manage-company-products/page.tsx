@@ -46,7 +46,7 @@ const companySchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  logoUrl: z.string().optional().or(z.literal('')), // Can be data URI or empty
+  logoUrl: z.string().optional().or(z.literal('')),
 });
 
 const productSchema = z.object({
@@ -204,7 +204,7 @@ export default function ManageCompanyProductsPage() {
             return new Promise<string | null>((resolve) => {
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null); // Resolve with null for large files
+                    resolve(null);
                     return;
                 }
                 const reader = new FileReader();
@@ -212,7 +212,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null); // Resolve with null on error
+                    resolve(null);
                 };
                 reader.readAsDataURL(file);
             });
@@ -369,6 +369,7 @@ export default function ManageCompanyProductsPage() {
         companyName: company.name,
     };
 
+    // @ts-expect-error We don't want to persist specificationsText
     const { specificationsText, ...finalProductData } = productData;
 
 
@@ -557,7 +558,7 @@ export default function ManageCompanyProductsPage() {
                   <div className="flex-grow w-full min-w-0 overflow-hidden">
                     <h3 className="font-semibold text-lg truncate" title={product.name}>{product.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      ${product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
+                      ₹{product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{product.category || 'Uncategorized'}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
@@ -725,7 +726,7 @@ export default function ManageCompanyProductsPage() {
                       name="price"
                       render={({ field }) => (
                           <FormItem>
-                          <FormLabel>Price ($)</FormLabel>
+                          <FormLabel>Price (₹)</FormLabel>
                           <FormControl><Input type="number" step="0.01" placeholder="e.g., 99.99" {...field} /></FormControl>
                           <FormMessage />
                           </FormItem>
@@ -832,4 +833,3 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
-

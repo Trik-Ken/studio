@@ -80,7 +80,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email or Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com or +15551234567" {...field} />
+                      <Input placeholder="you@example.com or +91 XXXXXXXXXX" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

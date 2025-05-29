@@ -71,11 +71,11 @@ export default function RegisterPage() {
       id: `comp-${Date.now()}`, 
       name: values.companyName,
       logoUrl: 'https://placehold.co/100x100.png', 
-      description: '', // Description will be added later
+      description: '',
       contactEmail: values.email,
       phoneNumber: values.phoneNumber,
       gstNumber: values.gstNumber,
-      address: '', // Address will be added later
+      address: '', 
       dataAiHint: 'new company' 
       // Password is not stored in mockCompanies for this prototype
     };
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                      <Input type="tel" placeholder="+91 XXXXXXXXXX" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

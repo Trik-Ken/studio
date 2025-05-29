@@ -213,7 +213,7 @@ export default function SecuritySettingsPage() {
                     <FormItem>
                       <FormLabel>New Phone Number</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                        <Input type="tel" placeholder="+91 XXXXXXXXXX" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

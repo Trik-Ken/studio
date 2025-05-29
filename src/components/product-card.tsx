@@ -49,7 +49,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="mt-auto pt-2">
             <div className="flex items-center justify-between">
               <p className="text-xl font-bold text-primary">
-                ${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
+                ₹{typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
               </p>
               {product.priceUnit && typeof product.priceForQuantity === 'number' && (
                 <div className="flex items-center text-sm text-muted-foreground">
