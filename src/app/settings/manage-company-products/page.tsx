@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package } from 'lucide-react'; // Added Package
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,6 @@ const companySchema = z.object({
   name: z.string().min(3, { message: "Company name must be at least 3 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
-  website: z.string().url({ message: "Invalid URL." }).optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
   logoUrl: z.string().optional().or(z.literal('')),
 });
@@ -95,7 +94,6 @@ export default function ManageCompanyProductsPage() {
       name: '',
       description: '',
       contactEmail: '',
-      website: '',
       address: '',
       logoUrl: '',
     },
@@ -120,7 +118,6 @@ export default function ManageCompanyProductsPage() {
         name: company.name,
         description: company.description,
         contactEmail: company.contactEmail || '',
-        website: company.website || '',
         address: company.address || '',
         logoUrl: company.logoUrl || '',
       });
@@ -151,6 +148,7 @@ export default function ManageCompanyProductsPage() {
         ...company,
         ...values,
         logoUrl: logoPreview || company.logoUrl, // Use preview if a new logo was selected
+        website: company.website, // Retain existing website if any, as it's not in the form
         dataAiHint: company.dataAiHint // Preserve existing AI hint
     };
     
@@ -269,7 +267,7 @@ export default function ManageCompanyProductsPage() {
         <Button variant="ghost" onClick={() => router.back()} className="mb-4 -ml-4">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Settings
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Manage Company & Products</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Manage Company &amp; Products</h1>
         <p className="text-muted-foreground">Edit your company's public profile and manage your product listings.</p>
       </header>
 
@@ -335,19 +333,6 @@ export default function ManageCompanyProductsPage() {
                     <FormLabel>Contact Email</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="contact@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={companyForm.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
