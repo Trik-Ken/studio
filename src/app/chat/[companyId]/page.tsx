@@ -26,8 +26,9 @@ export default function DirectChatPage() {
   const [productContext, setProductContext] = useState<Product | undefined>(undefined);
   const [fileToSend, setFileToSend] = useState<{ name: string; type: 'media' | 'document' } | null>(null);
   const prefillDoneRef = useRef<boolean>(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
@@ -76,7 +77,7 @@ export default function DirectChatPage() {
       messageText += `${messageText ? ' ' : ''}[Attached: ${fileToSend.name}]`;
     }
 
-    if (messageText.trim() === '') return; // Ensure there's some content to send
+    if (messageText.trim() === '') return;
 
     const message: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -87,7 +88,7 @@ export default function DirectChatPage() {
     };
     setMessages([...messages, message]);
     setNewMessage('');
-    setFileToSend(null); // Clear the selected file
+    setFileToSend(null);
     prefillDoneRef.current = true; 
 
     setTimeout(() => {
@@ -107,13 +108,28 @@ export default function DirectChatPage() {
     }, 1000);
   };
 
-  const handleAttachmentSelect = (type: 'media' | 'document') => {
-    // In a real app, this would open a file picker.
-    // For now, we'll just simulate a file being selected.
-    const mockFileName = type === 'media' ? 'media_file.jpg' : 'document.pdf';
-    setFileToSend({ name: mockFileName, type });
-    console.log(`Staged ${type} for sending: ${mockFileName}`);
-    // Popover should close automatically on item click if using <PopoverClose> or managing open state
+  const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
+    if (fileInputRef.current) {
+      if (attachmentType === 'media') {
+        fileInputRef.current.accept = 'image/*,video/*';
+      } else { // document
+        fileInputRef.current.accept = '.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      }
+      fileInputRef.current.click();
+    }
+    setPopoverOpen(false); // Close popover after initiating file selection
+  };
+
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const fileTypeForDisplay = file.type.startsWith('image/') || file.type.startsWith('video/') ? 'media' : 'document';
+      setFileToSend({ name: file.name, type: fileTypeForDisplay });
+    }
+    // Reset file input to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   if (!company) {
@@ -126,6 +142,13 @@ export default function DirectChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/30">
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileSelected}
+      />
       <header className="flex items-center p-3 border-b bg-background shadow-sm">
         <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
@@ -166,7 +189,7 @@ export default function DirectChatPage() {
           </div>
         )}
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <Popover>
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" type="button">
                 <Paperclip className="h-5 w-5 text-muted-foreground" />
@@ -174,10 +197,10 @@ export default function DirectChatPage() {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">
               <div className="flex flex-col space-y-1">
-                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentSelect('media')}>
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentClick('media')}>
                   <ImagePlus className="mr-2 h-4 w-4" /> Media (Image/Video)
                 </Button>
-                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentSelect('document')}>
+                <Button variant="ghost" className="justify-start px-3 py-2 h-auto w-full" onClick={() => handleAttachmentClick('document')}>
                   <FileTextIcon className="mr-2 h-4 w-4" /> Document
                 </Button>
               </div>
