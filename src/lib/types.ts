@@ -28,6 +28,7 @@ export interface Company {
   contactEmail?: string;
   website?: string;
   phoneNumber?: string;
+  gstNumber?: string; // Added GST Number
   dataAiHint?: string;
 }
 

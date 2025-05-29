@@ -10,6 +10,7 @@ export const mockCompanies: Company[] = [
     contactEmail: 'sales@innovatech.com',
     website: 'www.innovatech.com',
     phoneNumber: '1-800-555-0100',
+    gstNumber: 'GSTIN1234567890', // Added GST Number
     dataAiHint: 'technology company'
   },
   {
@@ -21,6 +22,7 @@ export const mockCompanies: Company[] = [
     contactEmail: 'info@ecobuild.com',
     website: 'www.ecobuild.com',
     phoneNumber: '1-800-555-0101',
+    gstNumber: 'GSTIN0987654321',
     dataAiHint: 'construction materials'
   },
   {
@@ -32,6 +34,7 @@ export const mockCompanies: Company[] = [
     contactEmail: 'support@precisiontools.com',
     website: 'www.precisiontools.com',
     phoneNumber: '1-800-555-0102',
+    gstNumber: 'GSTIN5432109876',
     dataAiHint: 'industrial tools'
   },
 ];
@@ -168,20 +171,20 @@ export const mockChatConversations: ChatConversation[] = [
 ];
 
 export const mockMessages: { [conversationId: string]: ChatMessage[] } = {
-  chat1: [
-    { id: 'msg1', conversationId: 'chat1', sender: 'user', text: 'Hello, I am interested in the AI Processor Unit.', timestamp: '10:25 AM' },
-    { id: 'msg2', conversationId: 'chat1', sender: 'company', text: 'Thanks for your inquiry! We will get back to you shortly.', timestamp: '10:30 AM' },
-    { id: 'msg3', conversationId: 'chat1', sender: 'user', text: 'Could you tell me more about the power consumption under load?', timestamp: '10:32 AM' },
-    { id: 'msg4', conversationId: 'chat1', sender: 'user', text: 'And what are the bulk pricing options?', timestamp: '10:33 AM' },
+  comp1: [ // Changed from chat1 to comp1 to match direct chat routing by companyId
+    { id: 'msg1', conversationId: 'comp1', sender: 'user', text: 'Hello, I am interested in the AI Processor Unit.', timestamp: '10:25 AM' },
+    { id: 'msg2', conversationId: 'comp1', sender: 'company', text: 'Thanks for your inquiry! We will get back to you shortly.', timestamp: '10:30 AM' },
+    { id: 'msg3', conversationId: 'comp1', sender: 'user', text: 'Could you tell me more about the power consumption under load?', timestamp: '10:32 AM' },
+    { id: 'msg4', conversationId: 'comp1', sender: 'user', text: 'And what are the bulk pricing options?', timestamp: '10:33 AM' },
   ],
-  chat2: [
-    { id: 'msg5', conversationId: 'chat2', sender: 'user', text: 'We need insulation panels for a large project.', timestamp: 'Yesterday' },
-    { id: 'msg6', conversationId: 'chat2', sender: 'company', text: 'Certainly! What is the total square footage you are looking to cover?', timestamp: 'Yesterday' },
-    { id: 'msg7', conversationId: 'chat2', sender: 'user', text: 'Can you provide a quote for 1000 units?', timestamp: 'Yesterday' },
+  comp2: [ // Changed from chat2 to comp2
+    { id: 'msg5', conversationId: 'comp2', sender: 'user', text: 'We need insulation panels for a large project.', timestamp: 'Yesterday' },
+    { id: 'msg6', conversationId: 'comp2', sender: 'company', text: 'Certainly! What is the total square footage you are looking to cover?', timestamp: 'Yesterday' },
+    { id: 'msg7', conversationId: 'comp2', sender: 'user', text: 'Can you provide a quote for 1000 units?', timestamp: 'Yesterday' },
   ],
-  chat3: [
-    { id: 'msg8', conversationId: 'chat3', sender: 'company', text: 'Your laser cutter has been shipped.', timestamp: 'Mon' },
-    { id: 'msg9', conversationId: 'chat3', sender: 'user', text: 'Great, the order is confirmed.', timestamp: 'Mon' },
+  comp3: [ // Changed from chat3 to comp3
+    { id: 'msg8', conversationId: 'comp3', sender: 'company', text: 'Your laser cutter has been shipped.', timestamp: 'Mon' },
+    { id: 'msg9', conversationId: 'comp3', sender: 'user', text: 'Great, the order is confirmed.', timestamp: 'Mon' },
   ],
 };
 

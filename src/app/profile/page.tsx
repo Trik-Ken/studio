@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings, ListOrdered, PlusCircle } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
@@ -51,13 +51,42 @@ export default function ProfilePage() {
           <CardTitle>Company Details</CardTitle>
           <CardDescription>View your company's public information.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p><strong>Email:</strong> {company.contactEmail || 'Not set'}</p>
-          <p><strong>Website:</strong> {company.website ? <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{company.website}</a> : 'Not set'}</p>
-          <p><strong>Address:</strong> {company.address || 'Not set'}</p>
-          <p className="text-sm text-muted-foreground pt-2">
-            {company.description}
-          </p>
+        <CardContent className="space-y-3">
+          {company.description && (
+            <p className="text-md text-foreground leading-relaxed">
+              {company.description}
+            </p>
+          )}
+          {(company.description && (company.contactEmail || company.phoneNumber || company.website || company.address || company.gstNumber)) && <Separator className="my-4" />}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div>
+              <span className="font-semibold text-muted-foreground">Email: </span>
+              <span>{company.contactEmail || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-muted-foreground">Phone: </span>
+              <span>{company.phoneNumber || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-muted-foreground">Website: </span>
+              {company.website ? (
+                <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {company.website}
+                </a>
+              ) : (
+                'Not set'
+              )}
+            </div>
+            <div>
+              <span className="font-semibold text-muted-foreground">Address: </span>
+              <span>{company.address || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-muted-foreground">GST Number: </span>
+              <span>{company.gstNumber || 'Not set'}</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
       
