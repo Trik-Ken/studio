@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, ChevronRight, ShoppingCart, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
@@ -121,9 +121,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           <Separator className="my-6" />
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" className="flex-1">
-              <ShoppingCart className="mr-2 h-5 w-5" /> Add to Inquiry
-            </Button>
             {company && (
               <Link href={`/chat/${company.id}?product=${product.id}`} passHref className="flex-1">
                 <Button variant="outline" size="lg" className="w-full">
