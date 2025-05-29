@@ -81,7 +81,7 @@ export default function ManageCompanyProductsPage() {
   const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [_selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [_selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // _ to denote not directly used in JSX
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -250,7 +250,6 @@ export default function ManageCompanyProductsPage() {
         ...company,
         ...values,
         gstNumber: company.gstNumber, 
-        website: company.website,
         phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint
     };

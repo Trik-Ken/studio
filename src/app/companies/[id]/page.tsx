@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Globe, Mail, MapPin } from 'lucide-react';
+import { MessageSquare, Mail, MapPin } from 'lucide-react'; // Removed Globe
 
 export default function CompanyProfilePage({ params }: { params: { id: string } }) {
   const { id } = params; 
@@ -45,7 +45,6 @@ export default function CompanyProfilePage({ params }: { params: { id: string } 
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-sm text-muted-foreground mb-4">
               {company.address && <span className="flex items-center"><MapPin className="h-4 w-4 mr-1.5"/> {company.address}</span>}
               {company.contactEmail && <span className="flex items-center"><Mail className="h-4 w-4 mr-1.5"/> {company.contactEmail}</span>}
-              {company.website && <span className="flex items-center"><Globe className="h-4 w-4 mr-1.5"/> <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{company.website}</a></span>}
             </div>
             {!isOwnProfile && (
               <Link href={`/chat/${company.id}`} passHref>

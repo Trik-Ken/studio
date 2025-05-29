@@ -9,7 +9,6 @@ export const mockCompanies: Company[] = [
     description: 'Leading provider of innovative tech solutions for businesses. We focus on quality and customer satisfaction, delivering cutting-edge products that drive growth and efficiency.',
     address: '123 Tech Park, Silicon Valley, CA',
     contactEmail: 'sales@innovatech.com',
-    website: 'www.innovatech.com',
     phoneNumber: '1-800-555-0100',
     gstNumber: 'GSTIN1234567890',
     dataAiHint: 'technology company'
@@ -21,7 +20,6 @@ export const mockCompanies: Company[] = [
     description: 'Sustainable and eco-friendly building materials for modern construction. Our products are designed to minimize environmental impact while maximizing performance and durability.',
     address: '456 Green Way, Boulder, CO',
     contactEmail: 'info@ecobuild.com',
-    website: 'www.ecobuild.com',
     phoneNumber: '1-800-555-0101',
     gstNumber: 'GSTIN0987654321',
     dataAiHint: 'construction materials'
@@ -33,7 +31,6 @@ export const mockCompanies: Company[] = [
     description: 'High-quality precision tools for industrial applications. We offer a wide range of tools engineered for accuracy, reliability, and long-lasting performance.',
     address: '789 Industrial Ave, Detroit, MI',
     contactEmail: 'support@precisiontools.com',
-    website: 'www.precisiontools.com',
     phoneNumber: '1-800-555-0102',
     gstNumber: 'GSTIN5432109876',
     dataAiHint: 'industrial tools'
@@ -345,4 +342,3 @@ export const mockMessages: { [conversationId: string]: ChatMessage[] } = {
 };
 
 export const loggedInCompanyId = 'comp1';
-

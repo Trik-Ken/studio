@@ -2,7 +2,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
@@ -11,7 +10,7 @@ import { Settings, Package } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Company, Product } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Added Avatar imports
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ProfilePage() {
   const [company, setCompany] = useState<Company | null>(null);
@@ -45,7 +44,7 @@ export default function ProfilePage() {
       <header className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Avatar className="h-20 w-20 border bg-muted"> {/* Using Avatar component */}
+            <Avatar className="h-20 w-20 border bg-muted">
               <AvatarImage
                 src={company.logoUrl}
                 alt={`${company.name} logo`}
@@ -77,7 +76,7 @@ export default function ProfilePage() {
               {company.description}
             </p>
           )}
-          {(company.description && (company.contactEmail || company.phoneNumber || company.website || company.address || company.gstNumber)) && <Separator className="my-4" />}
+          {(company.description && (company.contactEmail || company.phoneNumber || company.address || company.gstNumber)) && <Separator className="my-4" />}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
@@ -87,16 +86,6 @@ export default function ProfilePage() {
             <div>
               <span className="font-semibold text-muted-foreground">Phone: </span>
               <span>{company.phoneNumber || 'Not set'}</span>
-            </div>
-            <div>
-              <span className="font-semibold text-muted-foreground">Website: </span>
-              {company.website ? (
-                <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  {company.website}
-                </a>
-              ) : (
-                'Not set'
-              )}
             </div>
             <div>
               <span className="font-semibold text-muted-foreground">Address: </span>
