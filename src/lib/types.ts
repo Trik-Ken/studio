@@ -27,6 +27,7 @@ export interface Company {
   address?: string;
   contactEmail?: string;
   website?: string;
+  phoneNumber?: string;
   dataAiHint?: string;
 }
 

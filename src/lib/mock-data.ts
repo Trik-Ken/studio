@@ -9,6 +9,7 @@ export const mockCompanies: Company[] = [
     address: '123 Tech Park, Silicon Valley, CA',
     contactEmail: 'sales@innovatech.com',
     website: 'www.innovatech.com',
+    phoneNumber: '1-800-555-0100',
     dataAiHint: 'technology company'
   },
   {
@@ -19,6 +20,7 @@ export const mockCompanies: Company[] = [
     address: '456 Green Way, Boulder, CO',
     contactEmail: 'info@ecobuild.com',
     website: 'www.ecobuild.com',
+    phoneNumber: '1-800-555-0101',
     dataAiHint: 'construction materials'
   },
   {
@@ -29,6 +31,7 @@ export const mockCompanies: Company[] = [
     address: '789 Industrial Ave, Detroit, MI',
     contactEmail: 'support@precisiontools.com',
     website: 'www.precisiontools.com',
+    phoneNumber: '1-800-555-0102',
     dataAiHint: 'industrial tools'
   },
 ];

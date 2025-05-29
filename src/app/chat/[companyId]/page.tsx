@@ -10,15 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageBubble } from '@/components/message-bubble';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Phone, Info, Send, Paperclip, Smile, ImagePlus, FileText as FileTextIcon, X } from 'lucide-react';
+import { ArrowLeft, Phone, Info, Send, Paperclip, Smile, ImagePlus, FileText as FileTextIcon, X, Copy } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from "@/hooks/use-toast";
 
 export default function DirectChatPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const companyId = params.companyId as string;
+  const { toast } = useToast();
   
   const [company, setCompany] = useState<Company | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -28,7 +30,8 @@ export default function DirectChatPage() {
   const prefillDoneRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
+  const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
 
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
@@ -90,8 +93,6 @@ export default function DirectChatPage() {
     setNewMessage('');
     setFileToSend(null);
     prefillDoneRef.current = true; 
-
-    // Removed automatic reply logic
   };
 
   const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
@@ -103,7 +104,7 @@ export default function DirectChatPage() {
       }
       fileInputRef.current.click();
     }
-    setPopoverOpen(false); // Close popover after initiating file selection
+    setAttachmentPopoverOpen(false); 
   };
 
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,10 +113,35 @@ export default function DirectChatPage() {
       const fileTypeForDisplay = file.type.startsWith('image/') || file.type.startsWith('video/') ? 'media' : 'document';
       setFileToSend({ name: file.name, type: fileTypeForDisplay });
     }
-    // Reset file input to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleCopyToClipboard = async (text: string) => {
+    if (!navigator.clipboard) {
+      toast({
+        title: "Error",
+        description: "Clipboard API not available in this browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Phone number copied to clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy phone number.",
+        variant: "destructive",
+      });
+      console.error('Failed to copy: ', err);
+    }
+    setPhonePopoverOpen(false); 
   };
 
   if (!company) {
@@ -128,7 +154,6 @@ export default function DirectChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/30">
-      {/* Hidden file input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -147,9 +172,30 @@ export default function DirectChatPage() {
           <span className="font-semibold text-foreground truncate">{company.name}</span>
         </Link>
         <div className="space-x-1">
-          <Button variant="ghost" size="icon">
-            <Phone className="h-5 w-5 text-muted-foreground hover:text-primary" />
-          </Button>
+          <Popover open={phonePopoverOpen} onOpenChange={setPhonePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Phone className="h-5 w-5 text-muted-foreground hover:text-primary" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3">
+              {company.phoneNumber ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">{company.phoneNumber}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleCopyToClipboard(company.phoneNumber!)}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No phone number available.</p>
+              )}
+            </PopoverContent>
+          </Popover>
           <Link href={`/companies/${company.id}`} passHref>
             <Button variant="ghost" size="icon">
               <Info className="h-5 w-5 text-muted-foreground hover:text-primary" />
@@ -175,7 +221,7 @@ export default function DirectChatPage() {
           </div>
         )}
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <Popover open={attachmentPopoverOpen} onOpenChange={setAttachmentPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" type="button">
                 <Paperclip className="h-5 w-5 text-muted-foreground" />
