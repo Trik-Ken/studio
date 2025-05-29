@@ -57,11 +57,7 @@ const productSchema = z.object({
     (val) => (typeof val === 'string' && val !== '') ? parseFloat(val) : (typeof val === 'number' ? val : undefined),
     z.number({invalid_type_error: "Price must be a number."}).min(0, { message: "Price must be a positive number." })
   ),
-  priceForQuantity: z.preprocess(
-    (val) => (typeof val === 'string' && val !== '') ? parseInt(val,10) : (typeof val === 'number' ? val : undefined),
-    z.number({invalid_type_error: "Quantity must be a whole number."}).int().min(1, { message: "Quantity must be at least 1."})
-  ),
-  priceUnit: z.string().min(1, {message: "Price unit is required (e.g., item, panel)."}),
+  unitQuantity: z.string().min(1, {message: "Unit quantity description is required (e.g., item, box of 10)."}),
   category: z.string().optional().or(z.literal('')),
   imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co'), {
     message: "Primary image is required. Please upload an image or ensure a valid placeholder is set."
@@ -81,7 +77,7 @@ export default function ManageCompanyProductsPage() {
   const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [_selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // _ to denote not directly used in JSX
+  const [_selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -116,8 +112,7 @@ export default function ManageCompanyProductsPage() {
       name: '',
       description: '',
       price: 0,
-      priceForQuantity: 1,
-      priceUnit: 'unit',
+      unitQuantity: 'unit',
       category: '',
       imageUrl: 'https://placehold.co/600x400.png',
       additionalImageUrls: [],
@@ -290,8 +285,7 @@ export default function ManageCompanyProductsPage() {
       name: '',
       description: '',
       price: 0,
-      priceForQuantity: 1,
-      priceUnit: 'unit',
+      unitQuantity: 'unit',
       category: '',
       imageUrl: 'https://placehold.co/600x400.png',
       additionalImageUrls: [],
@@ -319,8 +313,7 @@ export default function ManageCompanyProductsPage() {
       name: product.name,
       description: product.description,
       price: product.price,
-      priceForQuantity: product.priceForQuantity,
-      priceUnit: product.priceUnit,
+      unitQuantity: product.unitQuantity,
       category: product.category || '',
       imageUrl: product.imageUrl || 'https://placehold.co/600x400.png',
       additionalImageUrls: additionalImages,
@@ -359,7 +352,7 @@ export default function ManageCompanyProductsPage() {
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
-        ...values,
+        ...values, // This will include unitQuantity instead of priceUnit/priceForQuantity
         imageUrl: primaryImageUrl,
         images: allImageUrls,
         specifications: parsedSpecifications,
@@ -557,7 +550,7 @@ export default function ManageCompanyProductsPage() {
                   <div className="flex-grow w-full min-w-0 overflow-hidden">
                     <h3 className="font-semibold text-lg truncate" title={product.name}>{product.name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      ₹{product.price.toFixed(2)} / {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity !== 1 ? 's' : ''}
+                      ₹{product.price.toFixed(2)} / {product.unitQuantity}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{product.category || 'Uncategorized'}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
@@ -719,7 +712,7 @@ export default function ManageCompanyProductsPage() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                       control={productForm.control}
                       name="price"
@@ -733,24 +726,12 @@ export default function ManageCompanyProductsPage() {
                       />
                       <FormField
                       control={productForm.control}
-                      name="priceForQuantity"
+                      name="unitQuantity"
                       render={({ field }) => (
                           <FormItem>
-                          <FormLabel>Items per Price</FormLabel>
-                          <FormControl><Input type="number" inputMode="numeric" pattern="[0-9]*" step="1" placeholder="e.g., 1" {...field} /></FormControl>
-                           <FormDescription className="text-xs">How many items this price is for.</FormDescription>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                      />
-                      <FormField
-                      control={productForm.control}
-                      name="priceUnit"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>Unit Name (Singular)</FormLabel>
-                          <FormControl><Input placeholder="e.g., item, panel, kg" {...field} /></FormControl>
-                          <FormDescription className="text-xs">The name of one item/unit.</FormDescription>
+                          <FormLabel>Unit Quantity</FormLabel>
+                          <FormControl><Input placeholder="e.g., item, box of 10, kg" {...field} /></FormControl>
+                           <FormDescription className="text-xs">Describe the unit or quantity this price applies to.</FormDescription>
                           <FormMessage />
                           </FormItem>
                       )}

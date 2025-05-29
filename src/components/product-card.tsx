@@ -12,14 +12,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const displayPriceUnit = () => {
-    if (!product.priceUnit) return ''; // Handle case where priceUnit might be undefined
-    if (product.priceForQuantity === 1) {
-      return `/ ${product.priceUnit}`;
-    }
-    return `/ ${product.priceForQuantity} ${product.priceUnit}${product.priceForQuantity === 1 ? '' : 's'}`;
-  };
-
   const safeImageUrl = product.imageUrl || 'https://placehold.co/600x400.png';
   const isPlaceholder = safeImageUrl.startsWith('https://placehold.co');
 
@@ -39,7 +31,7 @@ export function ProductCard({ product }: ProductCardProps) {
             />
           </div>
         </CardHeader>
-        <CardContent className="p-4 flex flex-col flex-grow min-w-0"> {/* Added min-w-0 here */}
+        <CardContent className="p-4 flex flex-col flex-grow min-w-0">
           <CardTitle className="text-lg font-semibold mb-1 truncate group-hover:text-primary transition-colors">
             {product.name || 'Unnamed Product'}
           </CardTitle>
@@ -51,11 +43,11 @@ export function ProductCard({ product }: ProductCardProps) {
               <p className="text-xl font-bold text-primary">
                 ₹{typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
               </p>
-              {product.priceUnit && typeof product.priceForQuantity === 'number' && (
+              {product.unitQuantity && (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Package className="w-4 h-4 mr-1.5 flex-shrink-0" />
                   <span className="truncate">
-                    {displayPriceUnit()}
+                    / {product.unitQuantity}
                   </span>
                 </div>
               )}

@@ -11,9 +11,8 @@ export interface Product {
   companyId: string;
   companyName: string;
   price: number;
-  priceForQuantity: number;
-  priceUnit: string;
-  category?: string; // Will be used for categorization on profile page
+  unitQuantity: string; // Renamed from priceUnit, priceForQuantity is removed
+  category?: string;
   rating?: number;
   reviewsCount?: number;
   quantityAvailable?: number;
