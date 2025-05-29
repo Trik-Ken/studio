@@ -2,7 +2,7 @@ import type { Product } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Package } from 'lucide-react'; // Using Package icon for quantity
+import { Package } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -33,18 +33,14 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="mt-auto pt-2">
             <div className="flex items-center justify-between">
               <p className="text-xl font-bold text-primary">
-                ${product.pricePerUnit.toFixed(2)}
+                ${product.price.toFixed(2)}
               </p>
-              {product.quantityAvailable !== undefined ? (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Package className="w-4 h-4 mr-1.5" />
-                  {product.quantityAvailable} unit{product.quantityAvailable === 1 ? '' : 's'} available
-                </div>
-              ) : (
-                 <div className="text-sm text-muted-foreground">
-                    Availability N/A
-                 </div>
-              )}
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Package className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">
+                  {product.priceForQuantity} {product.priceUnit}{product.priceForQuantity === 1 ? '' : 's'}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>

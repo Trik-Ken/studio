@@ -25,6 +25,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   // Simplified image display instead of a full carousel
   const displayImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
+  
+  const priceDisplayString = () => {
+    const unitString = `${product.priceForQuantity} ${product.priceUnit}${product.priceForQuantity === 1 ? '' : 's'}`;
+    if (product.priceForQuantity === 1) {
+      return `$${product.price.toFixed(2)} / ${product.priceUnit}`;
+    }
+    return `$${product.price.toFixed(2)} / ${unitString}`;
+  };
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -65,7 +73,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         <CardContent className="p-6">
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">{product.name}</h1>
           {product.category && <Badge variant="secondary" className="mb-3">{product.category}</Badge>}
-          <p className="text-2xl font-semibold text-primary mb-4">${product.pricePerUnit.toFixed(2)} / unit</p>
+          <p className="text-2xl font-semibold text-primary mb-4">{priceDisplayString()}</p>
           
           <div className="mb-6 text-foreground leading-relaxed">
             <h2 className="text-xl font-semibold mb-2">Description</h2>

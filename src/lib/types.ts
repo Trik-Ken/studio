@@ -9,11 +9,13 @@ export interface Product {
   returnPolicy: string;
   companyId: string;
   companyName: string;
-  pricePerUnit: number;
+  price: number; // Renamed from pricePerUnit
+  priceForQuantity: number; // The number of items the 'price' is for
+  priceUnit: string; // The name of the individual item/unit (singular, e.g., "unit", "panel")
   category?: string;
   rating?: number;
   reviewsCount?: number;
-  quantityAvailable?: number; // Added quantity field
+  quantityAvailable?: number;
   dataAiHint?: string;
 }
 
