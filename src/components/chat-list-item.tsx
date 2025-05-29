@@ -3,7 +3,6 @@ import type { ChatConversation } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 
 interface ChatListItemProps {
   conversation: ChatConversation;
@@ -24,8 +23,9 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
           </div>
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground truncate pr-2">{conversation.lastMessage}</p>
+            {/* Display a blue dot if unreadCount is greater than 0 */}
             {conversation.unreadCount && conversation.unreadCount > 0 && (
-              <Badge variant="default" className="h-5 px-2 text-xs">{conversation.unreadCount}</Badge>
+              <span className="h-2.5 w-2.5 bg-primary rounded-full flex-shrink-0" />
             )}
           </div>
         </div>
