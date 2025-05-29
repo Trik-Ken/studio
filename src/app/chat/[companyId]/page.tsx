@@ -21,7 +21,7 @@ export default function DirectChatPage() {
   const searchParams = useSearchParams();
   const companyId = params.companyId as string;
   const { toast } = useToast();
-  
+
   const [company, setCompany] = useState<Company | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -33,39 +33,41 @@ export default function DirectChatPage() {
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
 
+  // Extract productIdFromQuery outside the useEffect that depends on it
+  const productIdFromQuery = searchParams.get('product');
+
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
     setCompany(foundCompany);
 
-    const conversationId = companyId; 
+    const conversationId = companyId;
     const loadedMessages = mockMessages[conversationId] || [];
     setMessages(loadedMessages);
 
-    const productIdFromQuery = searchParams.get('product');
-
+    // Use the productIdFromQuery obtained from outside
     if (productIdFromQuery) {
       if (productContext?.id !== productIdFromQuery) {
         const product = mockProducts.find(p => p.id === productIdFromQuery);
         setProductContext(product);
-        prefillDoneRef.current = false; 
-        if (product) { 
-            setNewMessage(''); 
+        prefillDoneRef.current = false;
+        if (product) {
+            setNewMessage('');
         }
       }
     } else {
-      if (productContext) { 
+      if (productContext) {
         setProductContext(undefined);
         prefillDoneRef.current = false;
       }
     }
-  }, [companyId, searchParams, productContext?.id]);
+  }, [companyId, productIdFromQuery, productContext?.id]); // Use productIdFromQuery in dependency array
 
   useEffect(() => {
     if (productContext && !prefillDoneRef.current) {
       setNewMessage(`I'm interested in your product: ${productContext.name}. `);
-      prefillDoneRef.current = true; 
+      prefillDoneRef.current = true;
     }
-  }, [productContext]); 
+  }, [productContext]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,7 +94,7 @@ export default function DirectChatPage() {
     setMessages([...messages, message]);
     setNewMessage('');
     setFileToSend(null);
-    prefillDoneRef.current = true; 
+    prefillDoneRef.current = true;
   };
 
   const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
@@ -104,7 +106,7 @@ export default function DirectChatPage() {
       }
       fileInputRef.current.click();
     }
-    setAttachmentPopoverOpen(false); 
+    setAttachmentPopoverOpen(false);
   };
 
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,7 +143,7 @@ export default function DirectChatPage() {
       });
       console.error('Failed to copy: ', err);
     }
-    setPhonePopoverOpen(false); 
+    setPhonePopoverOpen(false);
   };
 
   if (!company) {
