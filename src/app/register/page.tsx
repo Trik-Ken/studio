@@ -35,7 +35,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const searchParams = useSearchParams(); // No longer used for pre-filling form but kept for consistency if needed later
+  const searchParams = useSearchParams(); 
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -49,13 +49,10 @@ export default function RegisterPage() {
     },
   });
   
-  // Email and phone are no longer pre-filled from query params, user enters them directly.
-  // Keeping useMemo example for other potential query params if needed in future.
-  const queryString = searchParams.toString(); // Get string for stable dependency
+  const queryString = searchParams.toString(); 
   const exampleQueryParam = useMemo(() => new URLSearchParams(queryString).get('example'), [queryString]);
   
   useEffect(() => {
-    // Example of using a query param if one were present
     if (exampleQueryParam) {
       console.log("Example query param:", exampleQueryParam);
     }
@@ -66,7 +63,6 @@ export default function RegisterPage() {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000)); 
 
-    // Check if email or phone number already exists (mock)
     const emailExists = mockCompanies.some(c => c.contactEmail?.toLowerCase() === values.email.toLowerCase());
     const phoneExists = mockCompanies.some(c => c.phoneNumber === values.phoneNumber);
 
@@ -85,13 +81,12 @@ export default function RegisterPage() {
       id: `comp-${Date.now()}`, 
       name: values.companyName,
       logoUrl: 'https://placehold.co/100x100.png', 
-      description: '', // No longer collected at registration
+      description: '', 
       contactEmail: values.email,
       phoneNumber: values.phoneNumber,
       gstNumber: values.gstNumber,
-      address: '', // No longer collected at registration
+      address: '', 
       dataAiHint: 'new company' 
-      // Password is not stored in mockCompanies for this prototype
     };
 
     mockCompanies.push(newCompany);
@@ -100,12 +95,15 @@ export default function RegisterPage() {
       title: "Registration Successful!",
       description: `Welcome, ${newCompany.name}! Please login with your new credentials.`,
     });
-    router.push('/login'); // Redirect to login page after registration
+    router.push('/login'); 
     setIsLoading(false);
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 py-8">
+      <div className="text-3xl font-bold text-primary mb-8 text-center">
+        ConTrad
+      </div>
       <Card className="w-full max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-4" />

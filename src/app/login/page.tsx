@@ -64,6 +64,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="text-3xl font-bold text-primary mb-8 text-center">
+        ConTrad
+      </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-12 w-12 text-primary mb-4" />
