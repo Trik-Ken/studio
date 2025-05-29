@@ -5,9 +5,9 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { BottomNavigation } from '@/components/layout/bottom-navigation';
-import { GlobalHeader } from '@/components/layout/global-header'; // New import
+import { GlobalHeader } from '@/components/layout/global-header';
 import { Toaster } from "@/components/ui/toaster";
-import { usePathname } from 'next/navigation'; // Import usePathname
+import { usePathname } from 'next/navigation';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -41,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* For metadata in client component layouts, manage through specific pages or a wrapper server component. */}
         <meta name="description" content="Connecting businesses for commerce with ConTrad." /> {/* Updated App Name */}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
