@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,12 +12,12 @@ const settingsOptions = [
     id: 'manage-company-products',
     title: 'Manage Company & Products',
     description: 'Edit company details, add new products, and update existing product listings.',
-    icon: Briefcase, // Changed icon to better reflect product management
+    icon: Briefcase, 
     href: '/settings/manage-company-products', 
   },
   {
     id: 'security',
-    title: 'Security &amp; Login',
+    title: 'Security & Login',
     description: 'Manage your password, two-factor authentication, and active sessions.',
     icon: ShieldCheck,
     href: '/settings/security', 
@@ -37,7 +38,7 @@ const settingsOptions = [
   },
   {
     id: 'help',
-    title: 'Help &amp; Support',
+    title: 'Help & Support',
     description: 'Access FAQs, contact support, or report an issue.',
     icon: HelpCircle,
     href: '/support', 
