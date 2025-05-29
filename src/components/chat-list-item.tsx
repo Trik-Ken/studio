@@ -24,7 +24,7 @@ export function ChatListItem({ conversation }: ChatListItemProps) {
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground truncate pr-2">{conversation.lastMessage}</p>
             {/* Display a blue dot if unreadCount is greater than 0 */}
-            {conversation.unreadCount && conversation.unreadCount > 0 && (
+            {conversation.unreadCount > 0 && (
               <span className="h-2.5 w-2.5 bg-primary rounded-full flex-shrink-0" />
             )}
           </div>
