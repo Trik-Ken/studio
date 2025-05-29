@@ -33,6 +33,10 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Extract query params for useEffect dependency and defaultValues
+  const emailFromQuery = searchParams.get('email') || '';
+  const phoneFromQuery = searchParams.get('phone') || '';
+
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -40,21 +44,26 @@ export default function RegisterPage() {
       gstNumber: '',
       description: '',
       address: '',
-      email: searchParams.get('email') || '',
-      phoneNumber: searchParams.get('phone') || '',
+      email: emailFromQuery,
+      phoneNumber: phoneFromQuery,
     },
   });
 
   useEffect(() => {
-    const email = searchParams.get('email');
-    const phone = searchParams.get('phone');
-    if (email) form.setValue('email', email);
-    if (phone) form.setValue('phoneNumber', phone);
-    if (!email || !phone) {
+    // Update form values if query params change (though unlikely after initial load)
+    // And perform initial validation/redirect
+    if (emailFromQuery) {
+      form.setValue('email', emailFromQuery);
+    }
+    if (phoneFromQuery) {
+      form.setValue('phoneNumber', phoneFromQuery);
+    }
+
+    if (!emailFromQuery || !phoneFromQuery) {
         toast({ title: "Missing information", description: "Email or phone missing for registration.", variant: "destructive"});
         router.replace('/login'); // Redirect if essential info is missing
     }
-  }, [searchParams, form, router, toast]);
+  }, [emailFromQuery, phoneFromQuery, form, router, toast]);
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
