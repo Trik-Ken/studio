@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package } from 'lucide-react';
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, UploadCloud, XCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -143,18 +143,32 @@ export default function ManageCompanyProductsPage() {
   const handleLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
-        toast({ title: "File too large", description: "Logo image must be under 2MB.", variant: "destructive"});
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ title: "File too large", description: "Logo image must be under 5MB.", variant: "destructive"});
+        event.target.value = ''; // Clear the input
         return;
       }
       setSelectedLogoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-        companyForm.setValue('logoUrl', reader.result as string);
+        const dataUri = reader.result as string;
+        setLogoPreview(dataUri);
+        companyForm.setValue('logoUrl', dataUri, { shouldValidate: true, shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoPreview(null);
+    setSelectedLogoFile(null);
+    companyForm.setValue('logoUrl', '', { shouldValidate: true, shouldDirty: true });
+    // Clear the file input if it's linked
+    const logoUploadInput = document.getElementById('logo-upload') as HTMLInputElement;
+    if (logoUploadInput) {
+        logoUploadInput.value = '';
+    }
+    toast({ title: "Logo Removed", description: "The company logo has been cleared."});
   };
   
   const handlePrimaryProductImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -162,6 +176,7 @@ export default function ManageCompanyProductsPage() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) { 
         toast({ title: "File too large", description: "Product image must be under 5MB.", variant: "destructive"});
+        event.target.value = '';
         return;
       }
       const reader = new FileReader();
@@ -226,8 +241,7 @@ export default function ManageCompanyProductsPage() {
     
     const updatedCompanyData: Company = {
         ...company,
-        ...values,
-        logoUrl: values.logoUrl || company.logoUrl, 
+        ...values, // values already contains name, description, contactEmail, address, logoUrl
         gstNumber: company.gstNumber, 
         website: company.website, 
         phoneNumber: company.phoneNumber,
@@ -411,12 +425,22 @@ export default function ManageCompanyProductsPage() {
         <CardContent>
           <Form {...companyForm}>
             <form onSubmit={companyForm.handleSubmit(onSubmitCompanyDetails)} className="space-y-6">
-              <div className="flex flex-col items-center space-y-4 mb-6">
+              <div className="flex flex-col items-center space-y-2 mb-6">
                 <Avatar className="h-32 w-32 border-2 border-primary shadow-sm">
                   <AvatarImage src={logoPreview || undefined} alt={company.name} data-ai-hint={company.dataAiHint || "company logo"}/>
                   <AvatarFallback>{company.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <FormItem className="w-full max-w-sm">
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('logo-upload')?.click()}>
+                    <UploadCloud className="mr-2 h-4 w-4" /> Change Logo
+                  </Button>
+                  {logoPreview && (
+                    <Button type="button" variant="ghost" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive/90">
+                       <XCircle className="mr-2 h-4 w-4" /> Remove Logo
+                    </Button>
+                  )}
+                </div>
+                <FormItem className="w-full max-w-sm sr-only">
                    <FormLabel htmlFor="logo-upload" className="text-center block cursor-pointer text-sm font-medium text-primary hover:underline">Change Logo</FormLabel>
                   <FormControl>
                     <Input
@@ -427,8 +451,9 @@ export default function ManageCompanyProductsPage() {
                       className="sr-only" 
                     />
                   </FormControl>
-                  <FormDescription className="text-center text-xs">Click label to upload (PNG, JPG, GIF up to 2MB).</FormDescription>
                 </FormItem>
+                <FormDescription className="text-center text-xs">PNG, JPG, GIF up to 5MB.</FormDescription>
+                 <FormMessage>{companyForm.formState.errors.logoUrl?.message}</FormMessage>
               </div>
 
               <FormField
@@ -515,7 +540,7 @@ export default function ManageCompanyProductsPage() {
                     height={80}
                     className="rounded-md object-cover aspect-square border bg-muted flex-shrink-0"
                     data-ai-hint={product.dataAiHint || "product image"}
-                    unoptimized={product.imageUrl.startsWith('data:image/')}
+                    unoptimized={product.imageUrl.startsWith('data:image/') || product.imageUrl.startsWith('https://placehold.co')}
                     onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/80x80.png'}}
                   />
                   <div className="flex-grow min-w-0">
@@ -600,7 +625,7 @@ export default function ManageCompanyProductsPage() {
                             height={120} 
                             className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
                             data-ai-hint="product image"
-                            unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') }
+                            unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
                             onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
                         />
                         <Input 
@@ -649,7 +674,7 @@ export default function ManageCompanyProductsPage() {
                                                 objectFit="cover"
                                                 className="rounded-md border bg-muted"
                                                 data-ai-hint="product image"
-                                                unoptimized={previewUrl.startsWith('data:image/')}
+                                                unoptimized={previewUrl.startsWith('data:image/') || previewUrl.startsWith('https://placehold.co')}
                                             />
                                         </div>
                                     ))}
@@ -794,5 +819,7 @@ export default function ManageCompanyProductsPage() {
     </div>
   );
 }
+
+    
 
     
