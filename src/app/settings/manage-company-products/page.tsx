@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { mockCompanies, mockProducts, loggedInCompanyId } from '@/lib/mock-data';
 import type { Company, Product } from '@/lib/types';
-import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, UploadCloud, XCircle } from 'lucide-react';
+import { ArrowLeft, Edit3, PlusCircle, Trash2, Package, UploadCloud, XCircle, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ const companySchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   contactEmail: z.string().email({ message: "Invalid email address." }).or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  logoUrl: z.string().optional().or(z.literal('')),
+  logoUrl: z.string().optional().or(z.literal('')), // data URI or URL
 });
 
 const productSchema = z.object({
@@ -61,12 +61,12 @@ const productSchema = z.object({
   category: z.string().optional().or(z.literal('')),
   imageUrl: z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co'), {
     message: "Primary image is required. Please upload an image or ensure a valid placeholder is set."
-  }).or(z.literal('')),
+  }).or(z.literal('')), // data URI or URL
   additionalImageUrls: z.array(
      z.string().refine(val => val.startsWith('data:image/') || val.startsWith('https://placehold.co') || val.startsWith('http://') || val.startsWith('https://'), {
         message: "Each additional image must be a valid data URI or URL."
     })
-  ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]),
+  ).max(6, { message: "You can upload a maximum of 6 additional images." }).optional().default([]), // Array of data URIs or URLs
   specificationsText: z.string().optional().or(z.literal('')),
   warrantyInfo: z.string().min(1, { message: "Warranty information is required." }),
   returnPolicy: z.string().min(1, { message: "Return policy is required." }),
@@ -157,7 +157,7 @@ export default function ManageCompanyProductsPage() {
   const handleRemoveLogo = () => {
     setLogoPreview(null);
     setSelectedLogoFile(null);
-    companyForm.setValue('logoUrl', '', { shouldValidate: true, shouldDirty: true });
+    companyForm.setValue('logoUrl', '', { shouldValidate: true, shouldDirty: true }); // Or set to a default placeholder if you have one
     const logoUploadInput = document.getElementById('logo-upload') as HTMLInputElement;
     if (logoUploadInput) {
         logoUploadInput.value = '';
@@ -183,6 +183,16 @@ export default function ManageCompanyProductsPage() {
     }
   };
 
+  const handleRemovePrimaryProductImage = () => {
+    setPrimaryProductImagePreview('https://placehold.co/600x400.png');
+    productForm.setValue('imageUrl', 'https://placehold.co/600x400.png', { shouldValidate: true });
+    const fileInput = document.getElementById('primary-product-image-upload') as HTMLInputElement;
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    toast({ title: "Primary Image Removed", description: "Primary image has been reset to placeholder." });
+  };
+
   const handleAdditionalProductImagesChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
@@ -191,15 +201,15 @@ export default function ManageCompanyProductsPage() {
 
         if (currentPreviews.length + files.length > 6) {
             toast({ title: "Too many files", description: `You can upload a maximum of 6 additional images in total. You already have ${currentPreviews.length}.`, variant: "destructive" });
-            if (event.target) event.target.value = '';
+            if (event.target) event.target.value = ''; // Clear the input
             return;
         }
 
         const filePromises = Array.from(files).map(file => {
-            return new Promise<string | null>((resolve) => {
+            return new Promise<string | null>((resolve) => { // No reject, resolve with null on error
                 if (file.size > 5 * 1024 * 1024) { // 5MB limit per image
                     toast({ title: "File too large", description: `${file.name} is over 5MB. Please select smaller images.`, variant: "destructive"});
-                    resolve(null); // Resolve with null instead of rejecting
+                    resolve(null);
                     return;
                 }
                 const reader = new FileReader();
@@ -207,7 +217,7 @@ export default function ManageCompanyProductsPage() {
                 reader.onerror = (error) => {
                     console.error("Error reading file:", file.name, error);
                     toast({ title: "File Read Error", description: `Could not read ${file.name}.`, variant: "destructive"});
-                    resolve(null); // Resolve with null on error
+                    resolve(null);
                 };
                 reader.readAsDataURL(file);
             });
@@ -216,7 +226,7 @@ export default function ManageCompanyProductsPage() {
         try {
             const settledPreviewsOrNulls = await Promise.all(filePromises);
             const validNewPreviews = settledPreviewsOrNulls.filter(p => p !== null) as string[];
-
+            
             const combinedPreviews = [...currentPreviews, ...validNewPreviews].slice(0, 6);
             const combinedFormValues = [...currentFormValues, ...validNewPreviews].slice(0, 6);
 
@@ -224,18 +234,30 @@ export default function ManageCompanyProductsPage() {
             productForm.setValue('additionalImageUrls', combinedFormValues, { shouldValidate: true });
 
             if (validNewPreviews.length !== files.length && files.length > 0 && event.target) {
-                 event.target.value = '';
+                 event.target.value = ''; // Some files failed, clear input to allow re-selection
             } else if (event.target) {
-                event.target.value = '';
+                event.target.value = ''; // Always clear after processing to allow re-selecting same files if needed
             }
 
         } catch (error) {
-            // This catch block might not be strictly necessary anymore if all file promises resolve
+            // This catch block should ideally not be reached if all promises resolve
             console.error("Unexpected error processing additional images:", error);
             toast({ title: "Error", description: "An unexpected error occurred while processing images.", variant: "destructive" });
             if (event.target) event.target.value = '';
         }
     }
+  };
+  
+  const handleRemoveAdditionalProductImage = (indexToRemove: number) => {
+    const currentPreviews = [...additionalProductImagePreviews];
+    const currentFormValues = [...(productForm.getValues('additionalImageUrls') || [])];
+
+    currentPreviews.splice(indexToRemove, 1);
+    currentFormValues.splice(indexToRemove, 1);
+
+    setAdditionalProductImagePreviews(currentPreviews);
+    productForm.setValue('additionalImageUrls', currentFormValues, { shouldValidate: true });
+    toast({ title: "Image Removed", description: "Additional image has been removed." });
   };
 
 
@@ -245,7 +267,7 @@ export default function ManageCompanyProductsPage() {
     const updatedCompanyData: Company = {
         ...company,
         ...values,
-        gstNumber: company.gstNumber,
+        gstNumber: company.gstNumber, // These are not in companySchema, so preserve them
         phoneNumber: company.phoneNumber,
         dataAiHint: company.dataAiHint
     };
@@ -301,9 +323,10 @@ export default function ManageCompanyProductsPage() {
     setEditingProduct(product);
     const specsText = product.specifications ? formatSpecificationsToText(product.specifications) : '';
 
-    const additionalImages = product.images && product.images.length > 1
-        ? product.images.slice(1).filter(img => img !== product.imageUrl)
-        : (product.images?.filter(img => img !== product.imageUrl) || []);
+    // Correctly populate additional images from product.images, excluding the primary imageUrl
+    const additionalImages = product.images && product.images.length > 0
+        ? product.images.filter(img => img !== product.imageUrl).slice(0,6) // Exclude primary, take up to 6
+        : [];
 
     setPrimaryProductImagePreview(product.imageUrl || 'https://placehold.co/600x400.png');
     setAdditionalProductImagePreviews(additionalImages);
@@ -317,7 +340,7 @@ export default function ManageCompanyProductsPage() {
       unitQuantity: product.unitQuantity,
       category: product.category || '',
       imageUrl: product.imageUrl || 'https://placehold.co/600x400.png',
-      additionalImageUrls: additionalImages,
+      additionalImageUrls: additionalImages, // This should be an array of strings (data URIs or URLs)
       specificationsText: specsText,
       warrantyInfo: product.warrantyInfo || '',
       returnPolicy: product.returnPolicy || '',
@@ -341,20 +364,30 @@ export default function ManageCompanyProductsPage() {
   const onSubmitProduct = (values: z.infer<typeof productSchema>) => {
     if (!company) return;
 
-    const primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
-    let allImageUrls: string[] = [primaryImageUrl];
+    let primaryImageUrl = values.imageUrl || 'https://placehold.co/600x400.png';
+    let allImageUrls: string[] = [];
 
-    if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
-      const uniqueAdditional = values.additionalImageUrls.filter(url => url !== primaryImageUrl);
-      allImageUrls = [primaryImageUrl, ...uniqueAdditional];
+    // If primary image is placeholder AND additional images exist, promote first additional to primary
+    if (primaryImageUrl === 'https://placehold.co/600x400.png' && values.additionalImageUrls && values.additionalImageUrls.length > 0) {
+        primaryImageUrl = values.additionalImageUrls[0];
+        allImageUrls = [...values.additionalImageUrls]; // All additional images become the full list
+    } else {
+        allImageUrls = [primaryImageUrl];
+        if (values.additionalImageUrls && values.additionalImageUrls.length > 0) {
+            // Add additional images, ensuring no duplicates with the (potentially new) primary
+            allImageUrls.push(...values.additionalImageUrls.filter(url => url !== primaryImageUrl));
+        }
     }
-    allImageUrls = allImageUrls.slice(0, 7);
+    // Ensure primary is first and list is unique, then cap at 7
+    allImageUrls = [primaryImageUrl, ...allImageUrls.filter(url => url !== primaryImageUrl)];
+    allImageUrls = Array.from(new Set(allImageUrls)).slice(0, 7);
+
 
     const parsedSpecifications = values.specificationsText ? parseSpecificationsFromText(values.specificationsText) : [];
 
     const productData = {
-        ...values,
-        imageUrl: primaryImageUrl,
+        ...values, // includes name, desc, price, unitQuantity, category, warrantyInfo, returnPolicy
+        imageUrl: primaryImageUrl, // Ensure this is the final primary
         images: allImageUrls,
         specifications: parsedSpecifications,
         dataAiHint: values.category || "product image",
@@ -367,7 +400,8 @@ export default function ManageCompanyProductsPage() {
 
 
     if (editingProduct) {
-      const updatedProduct: Product = { ...editingProduct, ...finalProductData };
+      // Ensure 'id' is part of finalProductData when editing
+      const updatedProduct: Product = { ...editingProduct, ...finalProductData, id: editingProduct.id };
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
 
       const productIndex = mockProducts.findIndex(p => p.id === editingProduct.id);
@@ -381,10 +415,10 @@ export default function ManageCompanyProductsPage() {
     } else {
       const newProduct: Product = {
         ...finalProductData,
-        id: `prod-${Date.now()}`,
+        id: `prod-${Date.now()}`, // Generate new ID
       };
       setProducts(prev => [newProduct, ...prev]);
-      mockProducts.unshift(newProduct);
+      mockProducts.unshift(newProduct); // Add to the global mock data list
       toast({
         title: 'Product Added',
         description: `${values.name} has been added to your listings.`,
@@ -392,7 +426,7 @@ export default function ManageCompanyProductsPage() {
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
-    setPrimaryProductImagePreview(null);
+    setPrimaryProductImagePreview(null); // Reset previews
     setAdditionalProductImagePreviews([]);
   };
 
@@ -429,7 +463,7 @@ export default function ManageCompanyProductsPage() {
               <div className="flex flex-col items-center space-y-2 mb-6">
                 <Avatar className="h-32 w-32 border-2 border-primary shadow-sm">
                   <AvatarImage
-                    src={logoPreview || undefined}
+                    src={logoPreview || undefined} // Use undefined for AvatarImage if logoPreview is null
                     alt={company.name}
                     data-ai-hint={company.dataAiHint || "company logo"}
                   />
@@ -445,20 +479,20 @@ export default function ManageCompanyProductsPage() {
                     </Button>
                   )}
                 </div>
-                <FormItem className="w-full max-w-sm sr-only">
-                   <FormLabel htmlFor="logo-upload" className="text-center block cursor-pointer text-sm font-medium text-primary hover:underline">Change Logo</FormLabel>
+                <FormItem className="w-full max-w-sm sr-only"> {/* Keep FormItem for structure but hide actual input field */}
+                   <FormLabel htmlFor="logo-upload" className="text-center block cursor-pointer text-sm font-medium text-primary hover:underline sr-only">Change Logo</FormLabel>
                   <FormControl>
                     <Input
                       id="logo-upload"
                       type="file"
                       accept="image/png, image/jpeg, image/gif"
                       onChange={handleLogoChange}
-                      className="sr-only"
+                      className="sr-only" // Visually hide the input, trigger via button
                     />
                   </FormControl>
                 </FormItem>
                 <FormDescription className="text-center text-xs">PNG, JPG, GIF up to 5MB.</FormDescription>
-                 <FormMessage>{companyForm.formState.errors.logoUrl?.message}</FormMessage>
+                 <FormMessage>{companyForm.formState.errors.logoUrl?.message}</FormMessage> {/* Assuming logoUrl can have validation errors */}
               </div>
 
               <FormField
@@ -623,31 +657,44 @@ export default function ManageCompanyProductsPage() {
                   <FormItem>
                     <FormLabel>Primary Product Image</FormLabel>
                     <FormControl>
-                      <div className="flex flex-col items-center gap-4">
-                          <Image
-                              src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/200x200.png'}
-                              alt="Product Preview"
-                              width={120}
-                              height={120}
-                              className="rounded-md border object-contain aspect-square bg-muted flex-shrink-0"
-                              data-ai-hint="product image"
-                              unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
-                              onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/200x200.png'}}
-                          />
-                          <Input
-                              id="primary-product-image-upload"
-                              type="file"
-                              accept="image/*"
-                              onChange={handlePrimaryProductImageChange}
-                              className="w-full max-w-xs"
-                          />
-                      </div>
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0 border rounded-md bg-muted flex items-center justify-center">
+                                <Image
+                                    src={primaryProductImagePreview || watchedImageUrl || 'https://placehold.co/600x400.png'}
+                                    alt="Product Preview"
+                                    width={120} // Adjusted for better fit within container
+                                    height={120}
+                                    className="rounded-md object-contain aspect-square" // aspect-square with object-contain
+                                    data-ai-hint="product image"
+                                    unoptimized={ (primaryProductImagePreview || watchedImageUrl)?.startsWith('data:image/') || (primaryProductImagePreview || watchedImageUrl)?.startsWith('https://placehold.co') }
+                                    onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/600x400.png'}}
+                                />
+                                {primaryProductImagePreview && primaryProductImagePreview !== 'https://placehold.co/600x400.png' && (
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full p-0 flex items-center justify-center"
+                                        onClick={handleRemovePrimaryProductImage}
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
+                            <Input
+                                id="primary-product-image-upload"
+                                type="file"
+                                accept="image/*"
+                                onChange={handlePrimaryProductImageChange}
+                                className="w-full max-w-xs"
+                            />
+                        </div>
                     </FormControl>
                     <FormDescription className="text-center">Upload the main image for your product from your device (max 5MB).</FormDescription>
                     <FormField
                       control={productForm.control}
                       name="imageUrl"
-                      render={({ field }) => ( <Input type="hidden" {...field} /> )}
+                      render={({ field }) => ( <Input type="hidden" {...field} /> )} // Store data URI or URL
                     />
                      <FormMessage>{productForm.formState.errors.imageUrl?.message}</FormMessage>
                   </FormItem>
@@ -655,7 +702,7 @@ export default function ManageCompanyProductsPage() {
                   <FormField
                       control={productForm.control}
                       name="additionalImageUrls"
-                      render={() => (
+                      render={() => ( // Field array not needed if we just manage an array of strings
                           <FormItem>
                               <FormLabel>Additional Product Images (Up to 6)</FormLabel>
                               <FormControl>
@@ -670,18 +717,27 @@ export default function ManageCompanyProductsPage() {
                               </FormControl>
                               <FormDescription>Select up to 6 additional images from your device (max 5MB each).</FormDescription>
                               {additionalProductImagePreviews.length > 0 && (
-                                  <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                                  <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                       {additionalProductImagePreviews.map((previewUrl, index) => (
-                                          <div key={index} className="relative aspect-square">
+                                          <div key={index} className="relative aspect-square group border rounded-md bg-muted flex items-center justify-center">
                                               <Image
                                                   src={previewUrl}
                                                   alt={`Additional product image ${index + 1}`}
                                                   layout="fill"
-                                                  objectFit="cover"
-                                                  className="rounded-md border bg-muted"
+                                                  objectFit="contain" // Use contain for previews
+                                                  className="rounded-md"
                                                   data-ai-hint="product image"
                                                   unoptimized={previewUrl.startsWith('data:image/') || previewUrl.startsWith('https://placehold.co')}
                                               />
+                                              <Button
+                                                  type="button"
+                                                  variant="destructive"
+                                                  size="icon"
+                                                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-7 w-7 rounded-full p-0 flex items-center justify-center"
+                                                  onClick={() => handleRemoveAdditionalProductImage(index)}
+                                              >
+                                                  <X className="h-4 w-4" />
+                                              </Button>
                                           </div>
                                       ))}
                                   </div>
