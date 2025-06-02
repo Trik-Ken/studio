@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { mockCompanies, mockMessages, mockProducts } from '@/lib/mock-data';
+import { mockCompanies, mockMessages, mockProducts, mockChatConversations } from '@/lib/mock-data';
 import type { Company, ChatMessage, Product } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function DirectChatPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
+  const searchParamsHook = useSearchParams(); // Renamed to avoid conflict
   const companyId = params.companyId as string;
   const { toast } = useToast();
 
@@ -33,12 +33,18 @@ export default function DirectChatPage() {
   const [attachmentPopoverOpen, setAttachmentPopoverOpen] = useState(false);
   const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
 
-  const queryString = searchParams.toString();
+  const queryString = searchParamsHook.toString();
   const productIdFromQuery = useMemo(() => new URLSearchParams(queryString).get('product'), [queryString]);
 
   useEffect(() => {
     const foundCompany = mockCompanies.find((c) => c.id === companyId);
     setCompany(foundCompany);
+
+    // Mark conversation as read
+    const conversationInList = mockChatConversations.find(conv => conv.companyId === companyId);
+    if (conversationInList && conversationInList.unreadCount && conversationInList.unreadCount > 0) {
+      conversationInList.unreadCount = 0;
+    }
 
     const conversationId = companyId;
     const loadedMessages = mockMessages[conversationId] || [];
@@ -96,6 +102,39 @@ export default function DirectChatPage() {
     setNewMessage('');
     setFileToSend(null);
     prefillDoneRef.current = true; // Mark as prefill done so it doesn't overwrite user typing after first send
+
+    // Simulate a company reply (very basic)
+    setTimeout(() => {
+      if (company) { // Ensure company is still defined
+        const reply: ChatMessage = {
+          id: `msg-${Date.now() + 1}`,
+          conversationId: company.id,
+          sender: 'company',
+          text: `Thanks for your message! We'll look into "${message.text.substring(0,20)}..." and get back to you.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        // Update mockMessages directly (for this mock implementation)
+        if (!mockMessages[company.id]) {
+          mockMessages[company.id] = [];
+        }
+        mockMessages[company.id].push(message, reply); // Add both user and company message
+        
+        // Update messages state for current chat page
+        setMessages(prevMessages => [...prevMessages, reply]);
+
+        // Update last message in mockChatConversations for the chat list page
+        const chatInList = mockChatConversations.find(c => c.companyId === company.id);
+        if (chatInList) {
+            chatInList.lastMessage = reply.text;
+            chatInList.lastMessageTimestamp = reply.timestamp;
+            // If we were simulating real-time, another user (the company) sending a message
+            // would increment the unreadCount if the current user is not on this chat page.
+            // For this simple simulation, we don't increment unreadCount here as the "company" reply is immediate.
+        }
+      }
+    }, 1000);
+
+
   };
 
   const handleAttachmentClick = (attachmentType: 'media' | 'document') => {
@@ -260,3 +299,5 @@ export default function DirectChatPage() {
     </div>
   );
 }
+
+    
